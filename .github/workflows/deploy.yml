@@ -25,7 +25,7 @@ jobs:
           rsync -avz --delete \
             --exclude '.git' \
             --exclude '.github' \
-            --exclude 'report.html' \
+            --exclude 'hw1/report.html' \
             -e "ssh -i ~/.ssh/deploy_key" \
             ./ \
             "${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/var/www/baddecisions.site/public_html/"
