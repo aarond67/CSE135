@@ -10,27 +10,36 @@
 
 <body>
   <main>
-    <div>
+    <section>
       <h1>CSE 135 HW1 Lives!</h1>
-      <script>
-        document.write(`Live @ ${new Date()}`);
-      </script>
-    </div>
-    <div>
-      <h1>Team Bad Decisions</h1>
+      <p id="live-time"></p>
+    </section>
+
+    <section>
+      <h2>Team Bad Decisions</h2>
       <h3>Team Members</h3>
+
       <ul>
-        <li><a href="/members/aaron.html">Aaron Delgado</a></li>
+        <li>
+          <a href="/members/aaron.html">Aaron Delgado</a>
+        </li>
       </ul>
-    </div>
+    </section>
+
+    <section>
+      <h2>Homework 1</h2>
+
+      <ul>
+        <li><a href="/hw1/hello.php">PHP Info</a></li>
+        <li><a href="/hw1/report.html">GoAccess Report</a></li>
+      </ul>
+    </section>
   </main>
-  <div>
-      <h1>Homework 1</h1>
-      <ul>
-        <li><a href="/hw1/hello.php">PHP</a></li>
-        <li><a href="/hw1/report.html">Report</a></li>
-      </ul>
-    </div>
+
+  <script>
+    document.getElementById("live-time").textContent =
+      `Live @ ${new Date()}`;
+  </script>
 </body>
 <!-- automatic deployment test -->
 </html>
