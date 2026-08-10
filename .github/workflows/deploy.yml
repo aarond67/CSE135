@@ -26,6 +26,7 @@ jobs:
             --exclude '.git' \
             --exclude '.github' \
             --exclude 'hw1/report.html' \
+            --exclude 'README.md' \
             -e "ssh -i ~/.ssh/deploy_key" \
             ./ \
             "${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/var/www/baddecisions.site/public_html/"
