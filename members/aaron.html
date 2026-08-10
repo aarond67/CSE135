@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 
-    <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -9,217 +9,319 @@
 
     <link rel="icon" href="/favicon.ico">
     <link rel="stylesheet" href="/css/aaron.css">
-    </head>
+</head>
 
-    <body>
+<body>
 
-        <header>
-            <nav>
-            <a href="/">Home</a>
+    <header>
+        <nav>
+            <a href="/">Aaron Delgado</a>
 
             <ul>
                 <li><a href="#about">About Me</a></li>
-                <li><a href="#projects">Projects</a></li>
-                <li><a href="#experience">Experience</a></li>
                 <li><a href="#skills">Skills</a></li>
+                <li><a href="#experience">Experience</a></li>
+                <li><a href="#projects">Projects</a></li>
                 <li><a href="#contact">Contact</a></li>
             </ul>
-            </nav>
-        </header>
+        </nav>
+    </header>
 
 
-        <main>
+    <main>
 
-            <!-- Hero Section -->
-            <section id="hero">
-            <div>
+        <!-- Hero Section -->
+        <section id="hero">
+
+            <div class="hero-content">
+
+
                 <p>Hello, I'm</p>
 
                 <h1>Aaron Delgado</h1>
 
                 <h2>Computer Engineering Student</h2>
 
-                <p>
-                I enjoy building software, web applications, and data-driven tools
-                that solve real problems.
+                <p class="hero-description">
+                    I enjoy building software, web applications, and data-driven
+                    tools that solve real problems.
                 </p>
 
-                <div>
-                <a href="#projects">View My Projects</a>
-                <a href="#contact">Contact Me</a>
+                <div class="hero-actions">
+                    <a href="#projects">View My Projects</a>
+                    <a href="#contact">Contact Me</a>
+                </div>
+
+                <div class="hero-socials">
+                    <a href="YOUR_GITHUB_URL" target="_blank" rel="noopener noreferrer">
+                        GitHub
+                    </a>
+
+                    <a href="YOUR_LINKEDIN_URL" target="_blank" rel="noopener noreferrer">
+                        LinkedIn
+                    </a>
+
+                    <a href="mailto:YOUR_EMAIL">
+                        Email
+                    </a>
+                </div>
+
+            </div>
+
+
+            <div class="hero-image">
+                <div class="hero-image-wrapper">
+                    <img
+                        src="/assets/aaron.jpg"
+                        alt="Aaron Delgado"
+                    >
                 </div>
             </div>
-            </section>
+
+        </section>
 
 
-            <!-- About Me -->
-            <section id="about">
-            <h2>About Me</h2>
+        <!-- About Me -->
+        <section id="about">
 
-            <p>
-                I'm a Computer Engineering student at UC San Diego with interests in
-                software engineering, web development, and building useful applications.
-            </p>
+            <div class="about-text">
+                <h2>About Me</h2>
 
-            <p>
-                I enjoy working on projects that combine programming, problem solving,
-                and real-world data.
-            </p>
-            </section>
+                <p>
+                    I'm a Computer Engineering student at UC San Diego with interests
+                    in software engineering, web development, and building useful
+                    applications.
+                </p>
+
+                <p>
+                    I enjoy working on projects that combine programming,
+                    problem solving, and real-world data.
+                </p>
+            </div>
+
+        </section>
 
 
-            <!-- Projects -->
-            <section id="projects">
+        <!-- Skills -->
+        <section id="skills">
+
+            <h2>Technical Skills</h2>
+
+            <div class="skills-grid">
+
+                <div class="skill-card">
+                    <h3>Programming</h3>
+                    <p>Python, C++, JavaScript, HTML, CSS</p>
+                </div>
+
+                <div class="skill-card">
+                    <h3>Web Development</h3>
+                    <p>Next.js, Responsive Design, GitHub Pages, Vercel</p>
+                </div>
+
+                <div class="skill-card">
+                    <h3>Tools & Systems</h3>
+                    <p>Git, GitHub, Linux, Apache, DigitalOcean</p>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Experience -->
+        <section id="experience">
+
+            <h2>Experience & Leadership</h2>
+
+            <div class="experience-list">
+
+                <article class="experience-card">
+                    <div>
+                        <h3>Chancellor's Scholars Alliance</h3>
+                        <p>President</p>
+                    </div>
+
+                    <p>
+                        Leadership experience working with student organizations,
+                        events, and campus programs.
+                    </p>
+                </article>
+
+
+                <article class="experience-card">
+                    <div>
+                        <h3>CSA Webmaster</h3>
+                        <p>Webmaster</p>
+                    </div>
+
+                    <p>
+                        Maintained and updated the organization's website and
+                        worked on improving its online presence.
+                    </p>
+                </article>
+
+
+                <article class="experience-card">
+                    <div>
+                        <h3>UC San Diego Retirement Resource Center</h3>
+                        <p>Student Assistant</p>
+                    </div>
+
+                    <p>
+                        Worked with customers, operations, and day-to-day
+                        services while helping improve efficiency.
+                    </p>
+                </article>
+
+            </div>
+
+        </section>
+
+
+        <!-- Projects -->
+        <section id="projects">
+
             <h2>Featured Projects</h2>
 
             <div class="project-grid">
 
                 <!-- Fitness Dashboard -->
                 <article class="project-card">
-                <h3>Fitness Dashboard</h3>
 
-                <p>
-                    A fitness and gym planning dashboard that uses gym occupancy data
-                    to help users find better times to work out.
-                </p>
+                    <div class="project-image">
+                        <img
+                            src="/assets/fitness-dashboard.png"
+                            alt="Fitness Dashboard project"
+                        >
+                    </div>
 
-                <p>
-                    <strong>Technologies:</strong>
-                    Python, JavaScript, Next.js, Data Analysis
-                </p>
+                    <div class="project-content">
 
-                <a
-                    href="https://fitness-dashboard-app-beta.vercel.app/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    View Project
-                </a>
+                        <h3>Fitness Dashboard</h3>
+
+                        <p>
+                            A fitness and gym planning dashboard that uses gym
+                            occupancy data to help users find better times to
+                            work out.
+                        </p>
+
+                        <p>
+                            <strong>Technologies:</strong>
+                            Python, JavaScript, Next.js, Data Analysis
+                        </p>
+
+                        <div class="project-links">
+                            <a
+                                href="https://fitness-dashboard-app-beta.vercel.app/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                View Project
+                            </a>
+                        </div>
+
+                    </div>
+
                 </article>
 
 
                 <!-- Meme Generator -->
                 <article class="project-card">
-                <h3>Meme Generator</h3>
 
-                <p>
-                    A responsive web application for creating and customizing memes,
-                    including image uploads, text editing, templates, and AI-assisted
-                    meme generation.
-                </p>
+                    <div class="project-image">
+                        <img
+                            src="/assets/meme-generator.png"
+                            alt="Meme Generator project"
+                        >
+                    </div>
 
-                <p>
-                    <strong>Technologies:</strong>
-                    HTML, CSS, JavaScript, GitHub
-                </p>
+                    <div class="project-content">
 
-                <a
-                    href="https://cse110-sp26-group18.github.io/meme-generator/meme-app/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    View Project
-                </a>
+                        <h3>Meme Generator</h3>
+
+                        <p>
+                            A responsive web application for creating and
+                            customizing memes, including image uploads, text
+                            editing, templates, and AI-assisted meme generation.
+                        </p>
+
+                        <p>
+                            <strong>Technologies:</strong>
+                            HTML, CSS, JavaScript, GitHub
+                        </p>
+
+                        <div class="project-links">
+                            <a
+                                href="https://cse110-sp26-group18.github.io/meme-generator/meme-app/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                View Project
+                            </a>
+                        </div>
+
+                    </div>
+
                 </article>
 
             </div>
-            </section>
+
+        </section>
 
 
-            <!-- Experience -->
-            <section id="experience">
-            <h2>Experience & Leadership</h2>
+        <!-- Contact -->
+        <section id="contact">
 
-            <article>
-                <h3>Chancellor's Scholars Alliance</h3>
-                <p>President</p>
+            <div class="contact-content">
 
-                <p>
-                Leadership experience working with student organizations,
-                events, and campus programs.
-                </p>
-            </article>
-
-            <article>
-                <h3>CSA Webmaster</h3>
+                <h2>Contact</h2>
 
                 <p>
-                Maintained and updated the organization's website and worked on
-                improving its online presence.
+                    Interested in my work or want to connect?
                 </p>
-            </article>
 
-            <article>
-                <h3>UC San Diego Retirement Resource Center</h3>
-                <p>Student Assistant</p>
+                <div class="contact-links">
 
-                <p>
-                Worked with customers, operations, and day-to-day services while
-                helping improve efficiency.
-                </p>
-            </article>
-            </section>
+                    <a href="mailto:YOUR_EMAIL">
+                        Email
+                    </a>
 
+                    <a
+                        href="YOUR_GITHUB_URL"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        GitHub
+                    </a>
 
-            <!-- Skills -->
-            <section id="skills">
-            <h2>Technical Skills</h2>
+                    <a
+                        href="YOUR_LINKEDIN_URL"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        LinkedIn
+                    </a>
 
-            <div>
-                <h3>Programming</h3>
-                <p>Python, C++, JavaScript, HTML, CSS</p>
+                </div>
+
             </div>
 
-            <div>
-                <h3>Web Development</h3>
-                <p>Next.js, Responsive Design, GitHub Pages, Vercel</p>
-            </div>
+        </section>
 
-            <div>
-                <h3>Tools & Systems</h3>
-                <p>Git, GitHub, Linux, Apache, DigitalOcean</p>
-            </div>
-            </section>
+    </main>
 
 
-            <!-- Contact -->
-            <section id="contact">
-            <h2>Contact</h2>
+    <footer>
+        <div class="footer-content">
 
-            <p>
-                Interested in my work or want to connect?
-            </p>
-
-            <div>
-                <a href="mailto:YOUR_EMAIL">Email</a>
-
-                <a
-                href="YOUR_GITHUB_URL"
-                target="_blank"
-                rel="noopener noreferrer"
-                >
-                GitHub
-                </a>
-
-                <a
-                href="YOUR_LINKEDIN_URL"
-                target="_blank"
-                rel="noopener noreferrer"
-                >
-                LinkedIn
-                </a>
-            </div>
-            </section>
-
-        </main>
-
-
-        <footer>
             <p>&copy; 2026 Aaron Delgado</p>
 
             <a href="/">Back to CSE 135 Homepage</a>
-        </footer>
 
-    </body>
+        </div>
+    </footer>
+
+</body>
 
 </html>
