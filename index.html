@@ -7,162 +7,93 @@
   <title>CSE 135 HW Lives!</title>
   <link rel="icon" href="/favicon.ico">
   <link rel="stylesheet" href="style.css">
-  <!--comment-->
+  <!--comments-->
 </head>
 
 <body>
-  <main>
 
-    <section>
-      <h1>CSE 135 HW Lives!</h1>
-      <p id="live-time"></p>
-    </section>
+  <div class="page-container">
 
-    <section>
-      <h2>Team Bad Decisions</h2>
+    <header>
+      <div class="site-title">
+        <h1>CSE 135</h1>
+        <h2>Summer 2026</h2>
+        <p id="live-time"></p>
+      </div>
 
-      <h3>Team Members</h3>
-      <ul>
-        <li>
-          <a href="/members/aaron.html">Aaron Delgado</a>
-        </li>
-      </ul>
-    </section>
+      <section class="team-card">
+        <h2>Team Bad Decisions</h2>
 
-    <section>
-      <h2>Homework 1</h2>
+        <h3>Team Members</h3>
+        <ul>
+          <li>
+            <a href="/members/aaron.html">Aaron Delgado</a>
+          </li>
+        </ul>
+      </section>
+    </header>
 
-      <ul>
-        <li><a href="/hw1/hello.php">PHP Info</a></li>
-        <li><a href="/hw1/report.html">GoAccess Report</a></li>
-      </ul>
-    </section>
+    <main>
 
-    <section>
-      <h2>Homework 2</h2>
+      <section class="homework-section">
+        <h2>Homework 1</h2>
 
-      <h3>Perl Examples</h3>
-      <ul>
-        <li>
-          <a href="/cgi-bin/perl-hello-html-world.pl">
-            Hello World HTML - Perl
-          </a>
-        </li>
-        <li>
-          <a href="/cgi-bin/perl-hello-json-world.pl">
-            Hello World JSON - Perl
-          </a>
-        </li>
-      </ul>
+        <div class="homework-box">
+          <ul>
+            <li><a href="/hw1/hello.php">PHP Info</a></li>
+            <li><a href="/hw1/report.html">GoAccess Report</a></li>
+          </ul>
+        </div>
+      </section>
 
-      <h3>PHP</h3>
-      <ul>
-        <li>
-          <a href="/hw2/php/hello-html-php-aaron.php">
-            Hello HTML - PHP
-          </a>
-        </li>
+      <section class="homework-section">
+        <h2>Homework 2</h2>
 
-        <li>
-          <a href="/hw2/php/hello-json-php-aaron.php">
-            Hello JSON - PHP
-          </a>
-        </li>
+        <div class="homework-box">
 
-        <li>
-          <a href="/hw2/php/environment-php-aaron.php">
-            Environment - PHP
-          </a>
-        </li>
+          <div class="language-grid">
 
-        <li>
-          <a href="/hw2/php/echo-php-aaron.php">
-            Echo - PHP
-          </a>
-        </li>
+            <div class="language-column">
+              <h3>PHP</h3>
+              <ul>
+                <li><a href="/hw2/php/hello-html-php-aaron.php">Hello HTML - PHP</a></li>
+                <li><a href="/hw2/php/hello-json-php-aaron.php">Hello JSON - PHP</a></li>
+                <li><a href="/hw2/php/environment-php-aaron.php">Environment - PHP</a></li>
+                <li><a href="/hw2/php/echo-php-aaron.php">Echo - PHP</a></li>
+                <li><a href="/hw2/php/state-php-aaron.php">State - PHP</a></li>
+              </ul>
+            </div>
 
-        <li>
-          <a href="/hw2/php/state-php-aaron.php">
-            State - PHP
-          </a>
-        </li>
-      </ul>
+            <div class="language-column">
+              <h3>Python</h3>
+              <ul>
+                <li><a href="/cgi-bin/python/hello-html-python-aaron.py">Hello HTML - Python</a></li>
+                <li><a href="/cgi-bin/python/hello-json-python-aaron.py">Hello JSON - Python</a></li>
+                <li><a href="/cgi-bin/python/environment-python-aaron.py">Environment - Python</a></li>
+                <li><a href="/cgi-bin/python/echo-python-aaron.py">Echo - Python</a></li>
+                <li><a href="/cgi-bin/python/state-python-aaron.py">State - Python</a></li>
+              </ul>
+            </div>
 
-      <h3>Python</h3>
-      <ul>
-        <li>
-          <a href="/cgi-bin/python/hello-html-python-aaron.py">
-            Hello HTML - Python
-          </a>
-        </li>
+            <div class="language-column">
+              <h3>Go</h3>
+              <ul>
+                <li><a href="/cgi-bin/go/hello-html-go-aaron">Hello HTML - Go</a></li>
+                <li><a href="/cgi-bin/go/hello-json-go-aaron">Hello JSON - Go</a></li>
+                <li><a href="/cgi-bin/go/environment-go-aaron">Environment - Go</a></li>
+                <li><a href="/cgi-bin/go/echo-go-aaron">Echo - Go</a></li>
+                <li><a href="/cgi-bin/go/state-go-aaron">State - Go</a></li>
+              </ul>
+            </div>
 
-        <li>
-          <a href="/cgi-bin/python/hello-json-python-aaron.py">
-            Hello JSON - Python
-          </a>
-        </li>
+          </div>
 
-        <li>
-          <a href="/cgi-bin/python/environment-python-aaron.py">
-            Environment - Python
-          </a>
-        </li>
+        </div>
+      </section>
 
-        <li>
-          <a href="/cgi-bin/python/echo-python-aaron.py">
-            Echo - Python
-          </a>
-        </li>
+    </main>
 
-        <li>
-          <a href="/cgi-bin/python/state-python-aaron.py">
-            State - Python
-          </a>
-        </li>
-      </ul>
-
-      <h3>Go</h3>
-      <ul>
-        <li>
-          <a href="/cgi-bin/go/hello-html-go-aaron">
-            Hello HTML - Go
-          </a>
-        </li>
-
-        <li>
-          <a href="/cgi-bin/go/hello-json-go-aaron">
-            Hello JSON - Go
-          </a>
-        </li>
-
-        <li>
-          <a href="/cgi-bin/go/environment-go-aaron">
-            Environment - Go
-          </a>
-        </li>
-
-        <li>
-          <a href="/cgi-bin/go/echo-go-aaron">
-            Echo - Go
-          </a>
-        </li>
-
-        <li>
-          <a href="/cgi-bin/go/state-go-aaron">
-            State - Go
-          </a>
-        </li>
-      </ul>
-
-    </section>
-
-  </main>
-
-  <script>
-    document.getElementById("live-time").textContent =
-      `Live @ ${new Date()}`;
-  </script>
-
+  </div>
 </body>
 
 </html>
