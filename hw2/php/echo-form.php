@@ -21,12 +21,10 @@
 
         <select id="language" name="language">
             <option value="php">PHP</option>
-
-            <!-- Add Python and Go later -->
+            <option value="python">Python</option>
+            <option value="go">Go</option>
         </select>
     </p>
-
-
     <p>
         <label for="method">HTTP Method:</label>
 
@@ -37,8 +35,6 @@
             <option value="DELETE">DELETE</option>
         </select>
     </p>
-
-
     <p>
         <label for="encoding">Encoding:</label>
 
@@ -52,8 +48,6 @@
             </option>
         </select>
     </p>
-
-
     <p>
         <label for="name">Name:</label>
         <input
@@ -63,8 +57,6 @@
             value="Aaron"
         >
     </p>
-
-
     <p>
         <label for="message">Message:</label>
         <input
@@ -74,22 +66,17 @@
             value="Hello World"
         >
     </p>
-
-
     <button type="submit">
         Send Request
     </button>
-
 </form>
 
 
 <noscript>
-
     <p>
         JavaScript is disabled. This form will submit a basic
         GET request to the PHP echo endpoint.
     </p>
-
 </noscript>
 
 
@@ -112,41 +99,23 @@ const responseArea = document.getElementById("response");
 
 
 form.addEventListener("submit", async function(event) {
-
     event.preventDefault();
-
-
     let endpoint;
-
-
     switch (language.value) {
 
         case "php":
-
             endpoint = "/hw2/php/echo-php-aaron.php";
-
-            break;
-
-        /*
-        We'll add these later:
-
+            break;      
         case "python":
             endpoint = "/cgi-bin/echo-python-aaron.py";
             break;
 
         case "go":
-            endpoint = "...";
+            endpoint = "/cgi-bin/echo-go-aaron";
             break;
-        */
-
     }
-
-
     const requestMethod = method.value;
-
     const requestEncoding = encoding.value;
-
-
     const formData = {
 
         name: document.getElementById("name").value,
@@ -154,11 +123,7 @@ form.addEventListener("submit", async function(event) {
         message: document.getElementById("message").value
 
     };
-
-
     let url = endpoint;
-
-
     const options = {
 
         method: requestMethod,
@@ -166,12 +131,9 @@ form.addEventListener("submit", async function(event) {
         headers: {}
 
     };
-
-
     /*
     GET requests send data through the URL
     */
-
     if (requestMethod === "GET") {
 
         const params = new URLSearchParams(formData);
@@ -179,53 +141,31 @@ form.addEventListener("submit", async function(event) {
         url += "?" + params.toString();
 
     }
-
-
-    /*
-    Other methods send data in the request body
-    */
-
     else {
 
         if (requestEncoding === "application/json") {
-
             options.headers["Content-Type"] =
                 "application/json";
 
             options.body =
                 JSON.stringify(formData);
-
         }
-
-
         else {
-
             options.headers["Content-Type"] =
                 "application/x-www-form-urlencoded";
-
             options.body =
                 new URLSearchParams(formData);
-
         }
 
     }
-
-
     try {
-
         const response = await fetch(url, options);
-
         const text = await response.text();
-
         responseArea.textContent = text;
-
     }
-
     catch (error) {
-
         responseArea.textContent =
             "Request failed: " + error;
-
     }
 
 });

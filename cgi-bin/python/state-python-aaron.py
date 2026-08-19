@@ -44,7 +44,6 @@ print("""
             View Saved Data
         </a>
     </p>
-
     <p>
         <a href="/cgi-bin/python/state-clear-python-aaron.py">
             Clear Saved Data

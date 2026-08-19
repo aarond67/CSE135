@@ -12,17 +12,12 @@ $message =
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>View PHP State</title>
 </head>
-
 <body>
-
 <h1>Saved PHP Session Data</h1>
-
-
 <p>
 
     <strong>Name:</strong>
@@ -30,8 +25,6 @@ $message =
     <?php echo htmlspecialchars($name); ?>
 
 </p>
-
-
 <p>
 
     <strong>Message:</strong>
@@ -39,8 +32,6 @@ $message =
     <?php echo htmlspecialchars($message); ?>
 
 </p>
-
-
 <p>
 
     <a href="state-php-aaron.php">
@@ -48,8 +39,6 @@ $message =
     </a>
 
 </p>
-
-
 <p>
 
     <a href="state-clear.php">
@@ -57,7 +46,5 @@ $message =
     </a>
 
 </p>
-
 </body>
-
 </html>

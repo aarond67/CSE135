@@ -11,20 +11,11 @@ $rawData = file_get_contents("php://input");
 
 $data = [];
 
-
-/*
-GET requests
-*/
 if ($method === "GET") {
 
     $data = $_GET;
 
 }
-
-
-/*
-JSON body
-*/
 elseif (strpos($contentType, "application/json") !== false) {
 
     $decoded = json_decode($rawData, true);
@@ -34,11 +25,6 @@ elseif (strpos($contentType, "application/json") !== false) {
     }
 
 }
-
-
-/*
-Form encoded POST
-*/
 elseif (
     $method === "POST" &&
     strpos($contentType, "application/x-www-form-urlencoded") !== false
@@ -47,11 +33,6 @@ elseif (
     $data = $_POST;
 
 }
-
-
-/*
-PUT / DELETE / other form encoded requests
-*/
 elseif (
     strpos($contentType, "application/x-www-form-urlencoded") !== false
 ) {
@@ -59,36 +40,21 @@ elseif (
     parse_str($rawData, $data);
 
 }
-
-
-/*
-Fallback
-*/
 else {
-
     $data = [
         "raw" => $rawData
     ];
-
 }
 
 
 $response = [
-
     "message" => "Echo response from PHP",
-
     "method" => $method,
-
     "data" => $data,
-
     "hostname" => gethostname(),
-
     "date" => date("D M d H:i:s Y"),
-
     "user_agent" => $_SERVER["HTTP_USER_AGENT"] ?? "Unknown",
-
     "ip" => $_SERVER["REMOTE_ADDR"] ?? "Unknown"
-
 ];
 
 

@@ -43,11 +43,8 @@ func main() {
 			received = values
 		}
 	}
-
 	data, _ := json.MarshalIndent(received, "", "    ")
-
 	fmt.Print("Content-Type: text/html\r\n\r\n")
-
 	fmt.Printf(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,29 +52,17 @@ func main() {
     <title>Aaron's Go Echo</title>
 </head>
 <body>
-
     <h1>Aaron's Go Echo</h1>
-
     <hr>
-
     <p>This page was generated with the Go programming language.</p>
-
     <p><strong>Hostname:</strong> %s</p>
-
     <p><strong>Date and Time:</strong> %s</p>
-
     <p><strong>Method:</strong> %s</p>
-
     <p><strong>Content Type:</strong> %s</p>
-
     <p><strong>User Agent:</strong> %s</p>
-
     <p><strong>IP Address:</strong> %s</p>
-
     <h2>Received Data</h2>
-
     <pre>%s</pre>
-
 </body>
 </html>
 `,

@@ -6,7 +6,6 @@ import html
 print("Cache-Control: no-cache")
 print("Content-Type: text/html")
 print()
-
 print("""<!DOCTYPE html>
 <html lang="en">
 
@@ -30,7 +29,6 @@ print("""<!DOCTYPE html>
 
 <tbody>
 """)
-
 for key, value in sorted(os.environ.items()):
     print("<tr>")
     print("<td>{}</td>".format(html.escape(key)))

@@ -18,10 +18,8 @@ data = {}
 
 # GET
 if method == "GET":
-
     query_string = os.environ.get("QUERY_STRING", "")
     parsed = parse_qs(query_string)
-
     data = {
         key: values[0] if len(values) == 1 else values
         for key, values in parsed.items()
@@ -29,14 +27,10 @@ if method == "GET":
 
 # POST / PUT / DELETE
 else:
-
     content_length = int(os.environ.get("CONTENT_LENGTH", 0) or 0)
-
     raw_data = sys.stdin.read(content_length)
-
     # JSON
     if "application/json" in content_type:
-
         try:
             data = json.loads(raw_data)
         except json.JSONDecodeError:
@@ -44,19 +38,14 @@ else:
                 "error": "Invalid JSON",
                 "raw": raw_data
             }
-
     # URL encoded
     elif "application/x-www-form-urlencoded" in content_type:
-
         parsed = parse_qs(raw_data)
-
         data = {
             key: values[0] if len(values) == 1 else values
             for key, values in parsed.items()
         }
-
     else:
-
         data = {
             "raw": raw_data
         }

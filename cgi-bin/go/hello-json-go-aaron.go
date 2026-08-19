@@ -19,14 +19,12 @@ func main() {
 	if ip == "" {
 		ip = "Unknown"
 	}
-
 	response := Response{
 		Message:   "Hello from Aaron!",
 		Language:  "Go",
 		DateTime:  time.Now().Format(time.RFC3339),
 		IPAddress: ip,
 	}
-
 	fmt.Print("Content-Type: application/json\r\n\r\n")
 
 	data, err := json.MarshalIndent(response, "", "    ")
@@ -34,6 +32,5 @@ func main() {
 		fmt.Println(`{"error":"Could not generate JSON"}`)
 		return
 	}
-
 	fmt.Println(string(data))
 }
