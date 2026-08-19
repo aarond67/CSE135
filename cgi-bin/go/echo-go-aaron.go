@@ -17,7 +17,7 @@ func main() {
 	ip := os.Getenv("REMOTE_ADDR")
 	host := os.Getenv("HTTP_HOST")
 
-	var body string
+	body := ""
 
 	if method == "GET" {
 		body = os.Getenv("QUERY_STRING")
@@ -44,17 +44,7 @@ func main() {
 		}
 	}
 
-	response := map[string]interface{}{
-		"hostname":    host,
-		"dateTime":    time.Now().Format(time.RFC3339),
-		"method":      method,
-		"contentType": contentType,
-		"userAgent":   userAgent,
-		"ipAddress":   ip,
-		"received":    received,
-	}
-
-	jsonOutput, _ := json.MarshalIndent(response, "", "    ")
+	data, _ := json.MarshalIndent(received, "", "    ")
 
 	fmt.Print("Content-Type: text/html\r\n\r\n")
 
@@ -62,29 +52,41 @@ func main() {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Go Echo</title>
+    <title>Aaron's Go Echo</title>
 </head>
 <body>
-    <h1>Go Echo</h1>
+
+    <h1>Aaron's Go Echo</h1>
+
+    <hr>
+
+    <p>This page was generated with the Go programming language.</p>
+
+    <p><strong>Hostname:</strong> %s</p>
+
+    <p><strong>Date and Time:</strong> %s</p>
 
     <p><strong>Method:</strong> %s</p>
+
     <p><strong>Content Type:</strong> %s</p>
-    <p><strong>Hostname:</strong> %s</p>
-    <p><strong>Date and Time:</strong> %s</p>
+
     <p><strong>User Agent:</strong> %s</p>
+
     <p><strong>IP Address:</strong> %s</p>
 
     <h2>Received Data</h2>
+
     <pre>%s</pre>
 
 </body>
-</html>`,
+</html>
+`,
+		html.EscapeString(host),
+		time.Now().Format("Mon Jan 02 15:04:05 2006"),
 		html.EscapeString(method),
 		html.EscapeString(contentType),
-		html.EscapeString(host),
-		html.EscapeString(time.Now().Format(time.RFC1123)),
 		html.EscapeString(userAgent),
 		html.EscapeString(ip),
-		html.EscapeString(string(jsonOutput)),
+		html.EscapeString(string(data)),
 	)
 }

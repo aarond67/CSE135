@@ -12,20 +12,31 @@ func main() {
 		ip = "Unknown"
 	}
 
+	currentTime := time.Now().Format("Mon Jan 02 15:04:05 2006")
+
 	fmt.Print("Content-Type: text/html\r\n\r\n")
 
 	fmt.Printf(`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Hello Go</title>
+    <title>Aaron's Go World</title>
 </head>
 <body>
-    <h1>Hello from Aaron!</h1>
-    <p>Language: Go</p>
-    <p>Generated at: %s</p>
-    <p>Your IP Address: %s</p>
+
+    <h1>Hello to Aaron's Go World</h1>
+
+    <hr>
+
+    <p>Hello World</p>
+
+    <p>This page was generated with the Go programming language.</p>
+
+    <p>This program was generated at: %s</p>
+
+    <p>Your current IP Address is: %s</p>
+
 </body>
 </html>
-`, time.Now().Format(time.RFC1123), ip)
+`, currentTime, ip)
 }

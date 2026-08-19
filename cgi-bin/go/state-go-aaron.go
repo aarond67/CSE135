@@ -13,7 +13,6 @@ func main() {
 
 	if os.Getenv("REQUEST_METHOD") == "POST" {
 		body, _ := io.ReadAll(os.Stdin)
-
 		values, _ := url.ParseQuery(string(body))
 		message = values.Get("message")
 	}
@@ -29,31 +28,49 @@ func main() {
 
 	fmt.Print("\r\n")
 
-	fmt.Printf(`<!DOCTYPE html>
+	fmt.Print(`<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Go State Demo</title>
+    <title>Aaron's Go State</title>
 </head>
 <body>
-    <h1>Go State Demo</h1>
+
+    <h1>Aaron's Go State Demo</h1>
+
+    <hr>
+
+    <p>This page was generated with the Go programming language.</p>
+
+    <p>Enter some data below to save it.</p>
 
     <form method="POST" action="/cgi-bin/go/state-go-aaron">
-        <label for="message">Enter something to save:</label>
+        <label for="message">Data to save:</label>
         <input type="text" id="message" name="message" required>
         <button type="submit">Save Data</button>
-    </form>`)
+    </form>
+`)
 
 	if message != "" {
-		fmt.Printf(
-			"<p>Saved value: %s</p>",
-			html.EscapeString(message),
-		)
+		fmt.Printf(`
+    <p>Saved value: %s</p>
+`, html.EscapeString(message))
 	}
 
-	fmt.Println(`
-    <p><a href="/cgi-bin/go/state-view-go-aaron">View Saved Data</a></p>
-    <p><a href="/cgi-bin/go/state-clear-go-aaron">Clear Saved Data</a></p>
+	fmt.Print(`
+    <p>
+        <a href="/cgi-bin/go/state-view-go-aaron">
+            View Saved Data
+        </a>
+    </p>
+
+    <p>
+        <a href="/cgi-bin/go/state-clear-go-aaron">
+            Clear Saved Data
+        </a>
+    </p>
+
 </body>
-</html>`)
+</html>
+`)
 }
