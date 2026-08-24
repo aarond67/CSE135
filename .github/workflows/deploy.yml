@@ -20,13 +20,21 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H "${{ secrets.DROPLET_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: Deploy website
+      - name: Deploy main website
         run: |
           rsync -avz --delete \
             --exclude '.git' \
             --exclude '.github' \
             --exclude 'hw1/report.html' \
+            --exclude 'hw3/test-site/' \
             --exclude 'README.md' \
             -e "ssh -i ~/.ssh/deploy_key" \
             ./ \
             "${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/var/www/baddecisions.site/public_html/"
+
+      - name: Deploy test website
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./hw3/test-site/ \
+            "${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/var/www/test.baddecisions.site/public_html/"
