@@ -19,10 +19,10 @@ header('Cache-Control: no-store');
 
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-$allowedMethods = ['GET', 'POST'];
+$allowedMethods = ['GET', 'POST', 'PUT'];
 
 if (!in_array($requestMethod, $allowedMethods, true)) {
-    header('Allow: GET, POST');
+    header('Allow: GET, POST, PUT');
     respondJson(['error' => 'Method not allowed'], 405);
 }
 
@@ -147,6 +147,93 @@ try {
             'message' => 'Static record created',
             'id' => $newId
         ], 201);
+    }
+
+    if ($requestMethod === 'PUT') {
+        if (
+            $id === null ||
+            !ctype_digit($id) ||
+            (int) $id < 1
+        ) {
+            respondJson(
+                ['error' => 'PUT requests require a valid numeric ID'],
+                400
+            );
+        }
+
+        $rawBody = file_get_contents('php://input');
+
+        try {
+            $requestBody = json_decode(
+                $rawBody ?: '',
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
+        } catch (JsonException $error) {
+            respondJson(['error' => 'Valid JSON is required'], 400);
+        }
+
+        if (!is_array($requestBody)) {
+            respondJson(['error' => 'The request body must be an object'], 400);
+        }
+
+        if (array_key_exists('id', $requestBody)) {
+            respondJson(
+                ['error' => 'The record ID belongs in the URL'],
+                400
+            );
+        }
+
+        $pageUrl = $requestBody['page_url'] ?? null;
+        $rawData = $requestBody['raw_data'] ?? null;
+
+        if (!is_string($pageUrl) || $pageUrl === '') {
+            respondJson(['error' => 'page_url is required'], 400);
+        }
+
+        if (!is_array($rawData)) {
+            respondJson(['error' => 'raw_data must be an object'], 400);
+        }
+
+        $existingStatement = $pdo->prepare(
+            'SELECT id
+            FROM static_data
+            WHERE id = :id'
+        );
+
+        $existingStatement->execute([
+            'id' => (int) $id
+        ]);
+
+        if (!$existingStatement->fetch()) {
+            respondJson(['error' => 'Static record not found'], 404);
+        }
+
+        $statement = $pdo->prepare(
+            'UPDATE static_data
+            SET page_url = :page_url,
+                user_agent = :user_agent,
+                language = :language,
+                raw_data = :raw_data
+            WHERE id = :id'
+        );
+
+        $statement->execute([
+            'page_url' => $pageUrl,
+            'user_agent' => $requestBody['user_agent'] ?? null,
+            'language' => $requestBody['language'] ?? null,
+            'raw_data' => json_encode(
+                $rawData,
+                JSON_UNESCAPED_SLASHES
+            ),
+            'id' => (int) $id
+        ]);
+
+        respondJson([
+            'message' => 'Static record updated',
+            'id' => (int) $id
+        ]);
     }
 
     if ($id === null) {
