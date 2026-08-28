@@ -27,6 +27,8 @@ jobs:
             --exclude '.github' \
             --exclude 'hw1/report.html' \
             --exclude 'hw3/test-site/' \
+            --exclude 'hw3/collector/' \
+            --exclude 'hw3/reporting/' \
             --exclude 'README.md' \
             -e "ssh -i ~/.ssh/deploy_key" \
             ./ \
@@ -38,3 +40,10 @@ jobs:
             -e "ssh -i ~/.ssh/deploy_key" \
             ./hw3/test-site/ \
             "${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/var/www/test.baddecisions.site/public_html/"
+
+      - name: Deploy collector
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./hw3/collector/ \
+            "${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/var/www/collector.baddecisions.site/public_html/"
