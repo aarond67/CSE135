@@ -80,6 +80,7 @@
     let idleTimer = null;
     let idleStartTime = null;
     let lastActivityTime = Date.now();
+    const pageEnteredAt = Date.now();
 
 
 
@@ -91,6 +92,9 @@
             data: data
         });
     }
+    queueActivity("page-enter", {
+        enteredAt: new Date(pageEnteredAt).toISOString()
+    });
     function startIdleTimer() {
         window.clearTimeout(idleTimer);
 
@@ -246,6 +250,30 @@
             return false;
         }
     }
+    window.addEventListener(
+        "pagehide",
+        function () {
+            const currentTime = Date.now();
+
+            if (idleStartTime !== null) {
+                queueActivity("idle", {
+                    endedAt: new Date(currentTime).toISOString(),
+                    durationMilliseconds: currentTime - idleStartTime
+                });
+
+                idleStartTime = null;
+            }
+
+            queueActivity("page-exit", {
+                leftAt: new Date(currentTime).toISOString()
+            });
+
+            sendActivityBatch();
+        },
+        {
+            once: true
+        }
+    );
 
     function cssIsEnabled() {
         const style = document.createElement("style");
