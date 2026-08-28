@@ -19,8 +19,10 @@ header('Cache-Control: no-store');
 
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-if ($requestMethod !== 'GET') {
-    header('Allow: GET');
+$allowedMethods = ['GET', 'POST'];
+
+if (!in_array($requestMethod, $allowedMethods, true)) {
+    header('Allow: GET, POST');
     respondJson(['error' => 'Method not allowed'], 405);
 }
 
@@ -39,6 +41,113 @@ try {
     );
 
     $id = $_GET['id'] ?? null;
+
+    if ($requestMethod === 'POST') {
+        if ($id !== null) {
+            respondJson(
+                ['error' => 'POST requests must not include an ID'],
+                400
+            );
+        }
+
+        $rawBody = file_get_contents('php://input');
+
+        try {
+            $requestBody = json_decode(
+                $rawBody ?: '',
+                true,
+                512,
+                JSON_THROW_ON_ERROR
+            );
+        } catch (JsonException $error) {
+            respondJson(['error' => 'Valid JSON is required'], 400);
+        }
+
+        if (!is_array($requestBody)) {
+            respondJson(['error' => 'The request body must be an object'], 400);
+        }
+
+        if (array_key_exists('id', $requestBody)) {
+            respondJson(
+                ['error' => 'POST bodies must not include an ID'],
+                400
+            );
+        }
+
+        $sessionId = $requestBody['session_id'] ?? null;
+        $pageUrl = $requestBody['page_url'] ?? null;
+        $rawData = $requestBody['raw_data'] ?? null;
+
+        if (!is_string($sessionId) || $sessionId === '') {
+            respondJson(['error' => 'session_id is required'], 400);
+        }
+
+        if (!is_string($pageUrl) || $pageUrl === '') {
+            respondJson(['error' => 'page_url is required'], 400);
+        }
+
+        if (!is_array($rawData)) {
+            respondJson(['error' => 'raw_data must be an object'], 400);
+        }
+
+        $sessionStatement = $pdo->prepare(
+            'SELECT session_id
+            FROM sessions
+            WHERE session_id = :session_id'
+        );
+
+        $sessionStatement->execute([
+            'session_id' => $sessionId
+        ]);
+
+        if (!$sessionStatement->fetch()) {
+            respondJson(['error' => 'Session not found'], 409);
+        }
+
+        $collectedAt = (new DateTimeImmutable(
+            'now',
+            new DateTimeZone('UTC')
+        ))->format('Y-m-d H:i:s.v');
+
+        $statement = $pdo->prepare(
+            'INSERT INTO static_data (
+                session_id,
+                page_url,
+                collected_at,
+                user_agent,
+                language,
+                raw_data
+            ) VALUES (
+                :session_id,
+                :page_url,
+                :collected_at,
+                :user_agent,
+                :language,
+                :raw_data
+            )'
+        );
+
+        $statement->execute([
+            'session_id' => $sessionId,
+            'page_url' => $pageUrl,
+            'collected_at' => $collectedAt,
+            'user_agent' => $requestBody['user_agent'] ?? null,
+            'language' => $requestBody['language'] ?? null,
+            'raw_data' => json_encode(
+                $rawData,
+                JSON_UNESCAPED_SLASHES
+            )
+        ]);
+
+        $newId = (int) $pdo->lastInsertId();
+
+        header("Location: /api/static/$newId");
+
+        respondJson([
+            'message' => 'Static record created',
+            'id' => $newId
+        ], 201);
+    }
 
     if ($id === null) {
         $statement = $pdo->query(
