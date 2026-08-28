@@ -8,6 +8,7 @@ $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 if ($requestOrigin === $allowedOrigin) {
     header("Access-Control-Allow-Origin: $allowedOrigin");
+    header('Access-Control-Allow-Credentials: true');
 }
 
 header('Vary: Origin');
