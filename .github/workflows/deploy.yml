@@ -48,3 +48,10 @@ jobs:
             -e "ssh -i ~/.ssh/deploy_key" \
             ./hw3/collector/ \
             "${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/var/www/collector.baddecisions.site/public_html/"
+
+      - name: Deploy reporting API
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./hw3/reporting/ \
+            "${{ secrets.DROPLET_USER }}@${{ secrets.DROPLET_HOST }}:/var/www/reporting.baddecisions.site/public_html/"
