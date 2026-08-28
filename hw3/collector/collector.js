@@ -73,9 +73,16 @@
     const ACTIVITY_SEND_INTERVAL = 5000;
     const MOUSE_SAMPLE_INTERVAL = 100;
     const SCROLL_SAMPLE_INTERVAL = 200;
+    const IDLE_THRESHOLD = 2000;
 
     let lastMouseTime = 0;
     let lastScrollTime = 0;
+    let idleTimer = null;
+    let idleStartTime = null;
+    let lastActivityTime = Date.now();
+
+
+
 
     function queueActivity(eventType, data) {
         activityQueue.push({
@@ -83,6 +90,29 @@
             timestamp: new Date().toISOString(),
             data: data
         });
+    }
+    function startIdleTimer() {
+        window.clearTimeout(idleTimer);
+
+        idleTimer = window.setTimeout(function () {
+            idleStartTime = lastActivityTime;
+        }, IDLE_THRESHOLD);
+    }
+
+    function noteUserActivity() {
+        const currentTime = Date.now();
+
+        if (idleStartTime !== null) {
+            queueActivity("idle", {
+                endedAt: new Date(currentTime).toISOString(),
+                durationMilliseconds: currentTime - idleStartTime
+            });
+
+            idleStartTime = null;
+        }
+
+        lastActivityTime = currentTime;
+        startIdleTimer();
     }
 
     function sendActivityBatch() {
@@ -178,6 +208,20 @@
             key: recordedKey(event)
         });
     });
+
+    [
+        "mousemove",
+        "click",
+        "scroll",
+        "keydown",
+        "keyup"
+    ].forEach(function (eventName) {
+        window.addEventListener(eventName, noteUserActivity, {
+            passive: true
+        });
+    });
+
+    startIdleTimer();
 
     window.setInterval(sendActivityBatch, ACTIVITY_SEND_INTERVAL);
     function cookiesAreEnabled() {
