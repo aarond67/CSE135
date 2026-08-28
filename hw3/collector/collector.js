@@ -199,6 +199,65 @@
             network: getNetworkInformation()
         };
         }
+        function getPerformanceData() {
+            const navigationEntries =
+                window.performance.getEntriesByType("navigation");
+
+            if (navigationEntries.length === 0) {
+                return null;
+            }
+
+            const navigationTiming = navigationEntries[0];
+
+            /*
+            * Navigation Timing values are relative to performance.timeOrigin.
+            * Adding timeOrigin converts them into absolute timestamps.
+            */
+            const pageLoadStart =
+                window.performance.timeOrigin +
+                navigationTiming.startTime;
+
+            const pageLoadEnd =
+                window.performance.timeOrigin +
+                navigationTiming.loadEventEnd;
+
+            const totalLoadTime =
+                navigationTiming.loadEventEnd -
+                navigationTiming.startTime;
+
+            return {
+                navigationTiming: navigationTiming.toJSON(),
+                pageLoadStart: new Date(pageLoadStart).toISOString(),
+                pageLoadEnd: new Date(pageLoadEnd).toISOString(),
+                totalLoadTimeMilliseconds:
+                    Math.round(totalLoadTime * 100) / 100
+            };
+        }
+
+        function reportPerformanceData() {
+            const performanceData = getPerformanceData();
+
+            if (
+                performanceData === null ||
+                performanceData.totalLoadTimeMilliseconds <= 0
+            ) {
+                console.warn(
+                    "[Collector] Complete performance timing was unavailable."
+                );
+                return;
+            }
+
+            const payload = {
+                type: "performance",
+                sessionId: sessionId,
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                data: performanceData
+            };
+
+            console.log("[Collector] Sending performance data:", payload);
+            send(payload);
+        }
 
         function reportPageView() {
             const payload = {
@@ -230,6 +289,7 @@
     function reportInitialData() {
         reportPageView();
         reportStaticData();
+        window.setTimeout(reportPerformanceData, 0);
     }
 
     if (document.readyState === "complete") {
