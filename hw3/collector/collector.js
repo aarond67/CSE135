@@ -209,10 +209,6 @@
 
             const navigationTiming = navigationEntries[0];
 
-            /*
-            * Navigation Timing values are relative to performance.timeOrigin.
-            * Adding timeOrigin converts them into absolute timestamps.
-            */
             const pageLoadStart =
                 window.performance.timeOrigin +
                 navigationTiming.startTime;
@@ -285,6 +281,51 @@
         console.log("[Collector] Sending static data:", payload);
         send(payload);
     }
+    function reportError(errorData) {
+        const payload = {
+            type: "error",
+            sessionId: sessionId,
+            url: window.location.href,
+            timestamp: new Date().toISOString(),
+            data: errorData
+        };
+
+        console.log("[Collector] Sending error:", payload);
+        send(payload);
+    }
+
+    window.addEventListener("error", function (event) {
+        reportError({
+            eventType: "javascript-error",
+            message: event.message || "Unknown JavaScript error",
+            filename: event.filename || null,
+            lineNumber: event.lineno || null,
+            columnNumber: event.colno || null,
+            stack:
+                event.error && typeof event.error.stack === "string"
+                    ? event.error.stack
+                    : null
+        });
+    });
+
+    window.addEventListener("unhandledrejection", function (event) {
+        const reason = event.reason;
+
+        reportError({
+            eventType: "unhandled-promise-rejection",
+            message:
+                reason instanceof Error
+                    ? reason.message
+                    : String(reason),
+            filename: null,
+            lineNumber: null,
+            columnNumber: null,
+            stack:
+                reason && typeof reason.stack === "string"
+                    ? reason.stack
+                    : null
+        });
+    });
 
     function reportInitialData() {
         reportPageView();
