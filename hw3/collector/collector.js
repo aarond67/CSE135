@@ -150,6 +150,35 @@
         }
     );
 
+    function recordedKey(event) {
+        const element = event.target;
+        const tagName = element && element.tagName;
+
+        if (
+            tagName === "INPUT" ||
+            tagName === "TEXTAREA" ||
+            tagName === "SELECT"
+        ) {
+            if (event.key.length === 1) {
+                return "[redacted]";
+            }
+        }
+
+        return event.key;
+    }
+
+    window.addEventListener("keydown", function (event) {
+        queueActivity("keydown", {
+            key: recordedKey(event)
+        });
+    });
+
+    window.addEventListener("keyup", function (event) {
+        queueActivity("keyup", {
+            key: recordedKey(event)
+        });
+    });
+
     window.setInterval(sendActivityBatch, ACTIVITY_SEND_INTERVAL);
     function cookiesAreEnabled() {
         const testCookie = "_collector_cookie_test";
