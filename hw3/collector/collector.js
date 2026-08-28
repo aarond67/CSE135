@@ -38,7 +38,6 @@
         }
 
         setSessionCookie(sessionId);
-
         return sessionId;
     }
 
@@ -70,23 +69,174 @@
         });
     }
 
-    function reportPageView() {
+    function cookiesAreEnabled() {
+        const testCookie = "_collector_cookie_test";
+
+        try {
+            document.cookie =
+                testCookie + "=1; Path=/; SameSite=Lax; Secure";
+
+            const enabled = document.cookie
+                .split(";")
+                .some(function (cookie) {
+                    return cookie.trim().startsWith(testCookie + "=");
+                });
+
+            document.cookie =
+                testCookie +
+                "=; Max-Age=0; Path=/; SameSite=Lax; Secure";
+
+            return enabled;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function cssIsEnabled() {
+        const style = document.createElement("style");
+        const testElement = document.createElement("div");
+
+        style.textContent =
+            ".collector-css-test { width: 37px !important; }";
+
+        testElement.className = "collector-css-test";
+        testElement.hidden = true;
+
+        document.head.appendChild(style);
+        document.body.appendChild(testElement);
+
+        const enabled =
+            window.getComputedStyle(testElement).width === "37px";
+
+        testElement.remove();
+        style.remove();
+
+        return enabled;
+    }
+
+    function imagesAreEnabled() {
+        return new Promise(function (resolve) {
+            const image = new Image();
+            let finished = false;
+
+            const timeout = window.setTimeout(function () {
+                finish(false);
+            }, 4000);
+
+            function finish(enabled) {
+                if (finished) {
+                    return;
+                }
+
+                finished = true;
+                window.clearTimeout(timeout);
+                resolve(enabled);
+            }
+
+            image.onload = function () {
+                finish(true);
+            };
+
+            image.onerror = function () {
+                finish(false);
+            };
+
+            image.src =
+                window.location.origin +
+                "/assets/usb-pet-rock.svg?collector-test=" +
+                Date.now();
+        });
+    }
+
+    function getNetworkInformation() {
+        const connection =
+            navigator.connection ||
+            navigator.mozConnection ||
+            navigator.webkitConnection;
+
+        if (!connection) {
+            return {
+                supported: false,
+                type: null,
+                effectiveType: null,
+                downlink: null,
+                rtt: null,
+                saveData: null
+            };
+        }
+
+        return {
+            supported: true,
+            type: connection.type || null,
+            effectiveType: connection.effectiveType || null,
+            downlink: connection.downlink ?? null,
+            rtt: connection.rtt ?? null,
+            saveData: connection.saveData ?? null
+        };
+    }
+
+    async function getStaticData() {
+        const imagesEnabled = await imagesAreEnabled();
+
+        return {
+            userAgent: navigator.userAgent,
+            language: navigator.language,
+            cookiesEnabled: cookiesAreEnabled(),
+            javascriptEnabled: true,
+            imagesEnabled: imagesEnabled,
+            cssEnabled: cssIsEnabled(),
+
+            screenDimensions: {
+                width: window.screen.width,
+                height: window.screen.height
+            },
+
+            windowDimensions: {
+                width: window.innerWidth,
+                height: window.innerHeight
+            },
+
+            network: getNetworkInformation()
+        };
+        }
+
+        function reportPageView() {
+            const payload = {
+                type: "pageview",
+                sessionId: sessionId,
+                url: window.location.href,
+                title: document.title,
+                referrer: document.referrer,
+                timestamp: new Date().toISOString()
+            };
+
+            console.log("[Collector] Sending pageview:", payload);
+            send(payload);
+    }
+
+    async function reportStaticData() {
         const payload = {
-            type: "pageview",
+            type: "static",
             sessionId: sessionId,
             url: window.location.href,
-            title: document.title,
-            referrer: document.referrer,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            data: await getStaticData()
         };
 
-        console.log("[Collector] Sending pageview:", payload);
+        console.log("[Collector] Sending static data:", payload);
         send(payload);
     }
 
-    if (document.readyState === "complete") {
+    function reportInitialData() {
         reportPageView();
+        reportStaticData();
+    }
+
+    if (document.readyState === "complete") {
+        reportInitialData();
     } else {
-        window.addEventListener("load", reportPageView, { once: true });
+        window.addEventListener("load", reportInitialData, {
+            once: true
+        });
     }
 })();
