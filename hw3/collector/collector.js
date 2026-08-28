@@ -69,6 +69,88 @@
         });
     }
 
+    const activityQueue = [];
+    const ACTIVITY_SEND_INTERVAL = 5000;
+    const MOUSE_SAMPLE_INTERVAL = 100;
+    const SCROLL_SAMPLE_INTERVAL = 200;
+
+    let lastMouseTime = 0;
+    let lastScrollTime = 0;
+
+    function queueActivity(eventType, data) {
+        activityQueue.push({
+            eventType: eventType,
+            timestamp: new Date().toISOString(),
+            data: data
+        });
+    }
+
+    function sendActivityBatch() {
+        if (activityQueue.length === 0) {
+            return;
+        }
+
+        const events = activityQueue.splice(0, activityQueue.length);
+
+        const payload = {
+            type: "activity",
+            sessionId: sessionId,
+            url: window.location.href,
+            timestamp: new Date().toISOString(),
+            data: {
+                events: events
+            }
+        };
+
+        console.log("[Collector] Sending activity batch:", payload);
+        send(payload);
+    }
+
+    window.addEventListener("mousemove", function (event) {
+        const currentTime = Date.now();
+
+        if (currentTime - lastMouseTime < MOUSE_SAMPLE_INTERVAL) {
+            return;
+        }
+
+        lastMouseTime = currentTime;
+
+        queueActivity("mousemove", {
+            x: event.clientX,
+            y: event.clientY
+        });
+    });
+
+    window.addEventListener("click", function (event) {
+        queueActivity("click", {
+            x: event.clientX,
+            y: event.clientY,
+            button: event.button
+        });
+    });
+
+    window.addEventListener(
+        "scroll",
+        function () {
+            const currentTime = Date.now();
+
+            if (currentTime - lastScrollTime < SCROLL_SAMPLE_INTERVAL) {
+                return;
+            }
+
+            lastScrollTime = currentTime;
+
+            queueActivity("scroll", {
+                x: window.scrollX,
+                y: window.scrollY
+            });
+        },
+        {
+            passive: true
+        }
+    );
+
+    window.setInterval(sendActivityBatch, ACTIVITY_SEND_INTERVAL);
     function cookiesAreEnabled() {
         const testCookie = "_collector_cookie_test";
 
@@ -198,64 +280,54 @@
 
             network: getNetworkInformation()
         };
+    }
+    function getPerformanceData() {
+        const navigationEntries =
+            window.performance.getEntriesByType("navigation");
+        if (navigationEntries.length === 0) {
+            return null;
         }
-        function getPerformanceData() {
-            const navigationEntries =
-                window.performance.getEntriesByType("navigation");
-
-            if (navigationEntries.length === 0) {
-                return null;
-            }
-
-            const navigationTiming = navigationEntries[0];
-
-            const pageLoadStart =
-                window.performance.timeOrigin +
-                navigationTiming.startTime;
-
-            const pageLoadEnd =
-                window.performance.timeOrigin +
-                navigationTiming.loadEventEnd;
-
-            const totalLoadTime =
-                navigationTiming.loadEventEnd -
-                navigationTiming.startTime;
-
-            return {
-                navigationTiming: navigationTiming.toJSON(),
-                pageLoadStart: new Date(pageLoadStart).toISOString(),
-                pageLoadEnd: new Date(pageLoadEnd).toISOString(),
-                totalLoadTimeMilliseconds:
-                    Math.round(totalLoadTime * 100) / 100
-            };
+        const navigationTiming = navigationEntries[0];
+        const pageLoadStart =
+            window.performance.timeOrigin +
+            navigationTiming.startTime;
+        const pageLoadEnd =
+            window.performance.timeOrigin +
+            navigationTiming.loadEventEnd;
+        const totalLoadTime =
+            navigationTiming.loadEventEnd -
+            navigationTiming.startTime;
+        return {
+            navigationTiming: navigationTiming.toJSON(),
+            pageLoadStart: new Date(pageLoadStart).toISOString(),
+            pageLoadEnd: new Date(pageLoadEnd).toISOString(),
+            totalLoadTimeMilliseconds:
+                Math.round(totalLoadTime * 100) / 100
+        };
+    }
+    function reportPerformanceData() {
+        const performanceData = getPerformanceData();
+        if (
+            performanceData === null ||
+            performanceData.totalLoadTimeMilliseconds <= 0
+        ) {
+            console.warn(
+                "[Collector] Complete performance timing was unavailable."
+            );
+            return;
         }
+        const payload = {
+            type: "performance",
+            sessionId: sessionId,
+            url: window.location.href,
+            timestamp: new Date().toISOString(),
+            data: performanceData
+        };
+        console.log("[Collector] Sending performance data:", payload);
+        send(payload);
+    }
 
-        function reportPerformanceData() {
-            const performanceData = getPerformanceData();
-
-            if (
-                performanceData === null ||
-                performanceData.totalLoadTimeMilliseconds <= 0
-            ) {
-                console.warn(
-                    "[Collector] Complete performance timing was unavailable."
-                );
-                return;
-            }
-
-            const payload = {
-                type: "performance",
-                sessionId: sessionId,
-                url: window.location.href,
-                timestamp: new Date().toISOString(),
-                data: performanceData
-            };
-
-            console.log("[Collector] Sending performance data:", payload);
-            send(payload);
-        }
-
-        function reportPageView() {
+    function reportPageView() {
             const payload = {
                 type: "pageview",
                 sessionId: sessionId,
