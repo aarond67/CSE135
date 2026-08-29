@@ -19,10 +19,10 @@ header('Cache-Control: no-store');
 
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-$allowedMethods = ['GET', 'POST', 'PUT'];
+$allowedMethods = ['GET', 'POST', 'PUT', 'DELETE'];
 
 if (!in_array($requestMethod, $allowedMethods, true)) {
-    header('Allow: GET, POST, PUT');
+    header('Allow: GET, POST, PUT, DELETE');
     respondJson(['error' => 'Method not allowed'], 405);
 }
 
@@ -234,6 +234,45 @@ try {
             'message' => 'Static record updated',
             'id' => (int) $id
         ]);
+    }
+
+    if ($requestMethod === 'DELETE') {
+        if (
+            $id === null ||
+            !ctype_digit($id) ||
+            (int) $id < 1
+        ) {
+            respondJson(
+                ['error' => 'DELETE requests require a valid numeric ID'],
+                400
+            );
+        }
+
+        $existingStatement = $pdo->prepare(
+            'SELECT id
+            FROM static_data
+            WHERE id = :id'
+        );
+
+        $existingStatement->execute([
+            'id' => (int) $id
+        ]);
+
+        if (!$existingStatement->fetch()) {
+            respondJson(['error' => 'Static record not found'], 404);
+        }
+
+        $deleteStatement = $pdo->prepare(
+            'DELETE FROM static_data
+            WHERE id = :id'
+        );
+
+        $deleteStatement->execute([
+            'id' => (int) $id
+        ]);
+
+        http_response_code(204);
+        exit;
     }
 
     if ($id === null) {
