@@ -1,17 +1,47 @@
-# Website
-- Website: https://baddecisions.site/
-
-# Anayltics
-For our third analytics approach, I decided to use Clicky. I first looked into Microsoft Clarity because it had features like heatmaps and session recordings, but while I was testing it, the data was taking a while to actually show up. Because of that, I decided to try Clicky instead. I liked Clicky because it focuses a lot on real-time analytics and was really easy to set up. It has features like Spy, which lets you see visitor actions almost as they happen, along with information about visitors, page views, time spent on the site, location, and which pages are being viewed. I also liked that the dashboard was simple and made it easy to quickly see what was happening on the website. Overall, I chose Clicky because it was straightforward, gave me information almost immediately, and gave us another type of analytics to compare with Google Analytics and LogRocket.
-
-
-# Members
+## Team Members
 - Aaron Delgado
 
-## Grader
-- Host: 198.199.73.64
-- Username: grader
+## Website Links
+Test website:
+https://test.baddecisions.site
+
+Collector script:
+https://collector.baddecisions.site/collector.js
+
+Collector endpoint:
+https://collector.baddecisions.site/log/
+
+Reporting API:
+https://reporting.baddecisions.site/api/static
 
 
 
-Server: CSE135 Server
+## Grader Notes
+
+- The test website is hosted at test.baddecisions.site.
+- Static, performance, error, and activity data are sent to the /log endpoint.
+- The endpoint stores the collected information in MySQL.
+- The reporting API retrieves information from the static_data table.
+- All collected records from the same browser session share the same session ID.
+- The REST API supports GET, POST, PUT, and DELETE operations.
+- The example GET route returns data collected from the test website.
+
+## Collector.js Changes
+
+Beyond the basic ideas shown in the CSE135 collector tutorial, I added:
+
+- A UUID-based session ID stored in sessionStorage.
+- A session cookie using Secure and SameSite attributes.
+- The same session ID is included with static, performance, error, and activity data.
+- Testing for whether cookies, images, and CSS are enabled.
+- Network connection information, including effective connection type, downlink, RTT, and data-saver status.
+- Full Navigation Timing data.
+- Manually calculated page-load start, page-load end, and total load time.
+- JavaScript error and unhandled-promise-rejection collection.
+- Mouse movement, click, and scrolling collection.
+- Keyboard event collection without recording sensitive form values.
+- Activity batching to avoid sending a request for every individual event.
+- Two-second idle-period detection.
+- Page-entry and page-exit events.
+- sendBeacon delivery with a fetch fallback.
+- Page-exit delivery using sendBeacon so queued events have a better chance of reaching the server.

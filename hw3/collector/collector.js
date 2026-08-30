@@ -82,9 +82,6 @@
     let lastActivityTime = Date.now();
     const pageEnteredAt = Date.now();
 
-
-
-
     function queueActivity(eventType, data) {
         activityQueue.push({
             eventType: eventType,
