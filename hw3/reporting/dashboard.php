@@ -36,7 +36,14 @@ $roleName = ucwords(
                     <?= escape($roleName) ?>
                 </span>
             </div>
-
+            <?php if ($user['role'] === 'super_admin'): ?>
+                <a
+                    href="/admin/users.php"
+                    class="button button-secondary"
+                >
+                    Manage users
+                </a>
+            <?php endif; ?>
             <form method="post" action="/logout.php">
                 <?= csrfInput() ?>
 
