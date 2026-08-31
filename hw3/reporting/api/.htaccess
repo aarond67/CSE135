@@ -2,5 +2,7 @@ Options -MultiViews
 
 RewriteEngine On
 
+RewriteRule ^overview/?$ overview.php [QSA,L]
+
 RewriteRule ^static/?$ index.php [QSA,L]
 RewriteRule ^static/([0-9]+)/?$ index.php?id=$1 [QSA,L]
