@@ -1,6 +1,8 @@
 <?php
 
 declare(strict_types=1);
+require_once dirname(__DIR__) . '/includes/bootstrap.php';
+require_once dirname(__DIR__) . '/includes/reporting-api.php';
 
 function respondJson(array $body, int $status = 200): void
 {
@@ -28,6 +30,26 @@ if (!in_array($requestMethod, $allowedMethods, true)) {
 
 try {
     $databaseConfig = require '/etc/cse135/reporting-db.php';
+    if ($requestMethod === 'GET') {
+        requireApiSection('technology');
+    } else {
+        requireApiUser(['super_admin']);
+
+        $submittedToken =
+            $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+
+        if (
+            !is_string($submittedToken) ||
+            $submittedToken === '' ||
+            !hash_equals(csrfToken(), $submittedToken)
+        ) {
+            apiResponse(
+                ['error' => 'A valid X-CSRF-Token header is required'],
+                403
+            );
+        }
+    }
+
 
     $pdo = new PDO(
         $databaseConfig['dsn'],
