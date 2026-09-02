@@ -602,3 +602,231 @@ a.button {
         transition: none;
     }
 }
+
+/* Performance report: switchable charts. Scoped to leave other pages alone. */
+.performance-chart-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.performance-chart-switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.3rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.65rem;
+    background: #f1f5f9;
+}
+
+.performance-chart-switch button {
+    padding: 0.7rem 0.9rem;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    color: #334155;
+    background: transparent;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+.performance-chart-switch button[aria-pressed="true"] {
+    color: #ffffff;
+    background: #6d28d9;
+}
+
+.performance-chart-switch button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.performance-chart-switch button:focus-visible,
+.performance-dot:focus-visible,
+.performance-stage-table:focus-visible {
+    outline: 3px solid #0f172a;
+    outline-offset: 3px;
+}
+
+.performance-chart-note,
+.performance-chart-detail {
+    padding: 0.8rem 1rem;
+    border-radius: 0.45rem;
+    color: #475569;
+    background: #f1f5f9;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.performance-chart-note:empty {
+    display: none;
+}
+
+.performance-chart-detail {
+    color: #4c1d95;
+    background: #f3e8ff;
+}
+
+.performance-chart {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+    margin-top: 1.5rem;
+}
+
+.performance-viz-row {
+    display: grid;
+    grid-template-columns: minmax(8rem, 2fr) minmax(10rem, 4fr) minmax(5rem, 1fr);
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+}
+
+.performance-viz-label {
+    overflow-wrap: anywhere;
+    font-weight: 650;
+    font-size: 0.95rem;
+}
+
+.performance-viz-value {
+    text-align: right;
+}
+
+.performance-viz-value small {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.performance-viz-axis,
+.performance-viz-plot,
+.performance-viz-stack {
+    position: relative;
+    min-width: 0;
+    margin-inline: 0.75rem;
+}
+
+.performance-viz-axis {
+    height: 1.5rem;
+}
+
+.performance-viz-tick {
+    position: absolute;
+    transform: translateX(-50%);
+    color: #475569;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.performance-viz-tick:first-child {
+    transform: none;
+}
+
+.performance-viz-tick:last-child {
+    transform: translateX(-100%);
+}
+
+.performance-axis-label {
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.performance-viz-plot,
+.performance-viz-stack {
+    border-bottom: 1px solid #cbd5e1;
+    background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px);
+    background-size: 25% 100%;
+    border-right: 1px solid #e2e8f0;
+}
+
+.performance-dot {
+    position: absolute;
+    z-index: 1;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 4px solid #7c3aed;
+    border-radius: 50%;
+    background: #ffffff;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+}
+
+.performance-dot:hover,
+.performance-dot[aria-pressed="true"] {
+    background: #7c3aed;
+}
+
+.performance-dot:focus-visible {
+    z-index: 2;
+}
+
+.performance-viz-stack {
+    display: flex;
+    height: 2.25rem;
+}
+
+.performance-stage-segment {
+    flex: 0 0 auto;
+    height: 100%;
+}
+
+.performance-stage-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem 1.25rem;
+    margin: 0 0 0.5rem;
+    padding: 0;
+    list-style: none;
+    font-size: 0.9rem;
+}
+
+.performance-stage-legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.performance-stage-swatch {
+    flex: 0 0 0.8rem;
+    height: 0.8rem;
+    border-radius: 0.15rem;
+}
+
+.performance-stage-before { background: #64748b; }
+.performance-stage-waiting { background: #2563eb; }
+.performance-stage-download { background: #0f766e; }
+.performance-stage-after { background: #7c3aed; }
+
+.performance-stage-table {
+    min-width: 0;
+    margin-top: 0.5rem;
+}
+
+.performance-table-caption {
+    padding: 0.75rem 0;
+    text-align: left;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 48rem) {
+    .performance-viz-row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.75rem;
+    }
+
+    .performance-viz-plot,
+    .performance-viz-stack,
+    .performance-viz-axis {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .performance-viz-axis-row > :last-child {
+        display: none;
+    }
+}

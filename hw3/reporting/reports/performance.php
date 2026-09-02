@@ -170,10 +170,10 @@ $defaultStart =
         Performance Report | Bad Decisions Analytics
     </title>
 
-    <link rel="stylesheet" href="/assets/css/app.css">
+    <link rel="stylesheet" href="/assets/css/app.css?v=performance-switch-1">
 
     <script
-        src="/assets/js/performance-report.js"
+        src="/assets/js/performance-report.js?v=performance-switch-1"
         defer
     ></script>
 </head>
@@ -335,17 +335,51 @@ $defaultStart =
         </section>
 
         <section class="panel report-panel">
-            <p class="eyebrow">Page comparison</p>
-            <h2>Average load time by page</h2>
+            <div class="performance-chart-heading">
+                <div>
+                    <p class="eyebrow">Investigate page loading</p>
+                    <h2 id="performance-chart-title">Individual load times</h2>
+                </div>
 
-            <p class="muted">
-                Longer bars identify pages with slower average loading.
+                <div class="performance-chart-switch" role="group" aria-label="Chart view">
+                    <button
+                        type="button"
+                        id="performance-view-dots"
+                        aria-pressed="true"
+                        aria-controls="performance-page-chart"
+                        disabled
+                    >Individual loads</button>
+                    <button
+                        type="button"
+                        id="performance-view-stages"
+                        aria-pressed="false"
+                        aria-controls="performance-page-chart"
+                        disabled
+                    >Loading stages</button>
+                </div>
+            </div>
+
+            <p class="muted" id="performance-chart-description">
+                Each dot is one measured page load. Select a dot to inspect it.
             </p>
+
+            <p class="performance-chart-note" id="performance-chart-note"></p>
 
             <div
                 id="performance-page-chart"
-                class="horizontal-chart"
+                class="performance-chart"
+                aria-labelledby="performance-chart-title"
+                aria-describedby="performance-chart-description performance-chart-note"
+                aria-busy="true"
             ></div>
+
+            <p
+                id="performance-chart-detail"
+                class="performance-chart-detail"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></p>
         </section>
 
         <section class="panel data-panel">
@@ -354,6 +388,9 @@ $defaultStart =
 
             <div class="table-wrapper">
                 <table class="data-table">
+                    <caption class="performance-table-caption">
+                        Latest 100 measurements at most; summary cards cover the full date range.
+                    </caption>
                     <thead>
                         <tr>
                             <th scope="col">Collected</th>

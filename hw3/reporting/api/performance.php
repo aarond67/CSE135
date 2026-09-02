@@ -15,6 +15,66 @@ $queryParameters = [
     'end' => $dateRange['sql_end_exclusive']
 ];
 
+/**
+ * Four consecutive, non-overlapping intervals from the same navigation.
+ * Missing, non-numeric, incomplete, or inconsistent timings are not zeroes.
+ * See https://developer.mozilla.org/en-US/docs/Web/API/PerformanceNavigationTiming
+ */
+function performanceLoadingStages(array $row): ?array
+{
+    $timing = json_decode($row['navigation_timing'] ?? '', true);
+
+    if (!is_array($timing)) {
+        return null;
+    }
+
+    $keys = [
+        'startTime', 'requestStart', 'responseStart',
+        'responseEnd', 'loadEventEnd'
+    ];
+    $values = [];
+
+    foreach ($keys as $key) {
+        $value = $timing[$key] ?? null;
+
+        if (
+            (!is_int($value) && !is_float($value)) ||
+            !is_finite((float) $value) ||
+            $value < 0
+        ) {
+            return null;
+        }
+
+        $values[] = (float) $value;
+    }
+
+    for ($index = 1; $index < count($values); $index++) {
+        if ($values[$index] < $values[$index - 1]) {
+            return null;
+        }
+    }
+
+    $total = $row['total_load_time_ms'] ?? null;
+    $navigationTotal = $values[4] - $values[0];
+
+    if (
+        !is_numeric($total) ||
+        !is_finite((float) $total) ||
+        (float) $total <= 0 ||
+        $navigationTotal <= 0 ||
+        abs($navigationTotal - (float) $total) > 1.0
+    ) {
+        return null;
+    }
+
+    return [
+        'beforeRequestMs' => $values[1] - $values[0],
+        'waitingMs' => $values[2] - $values[1],
+        'downloadMs' => $values[3] - $values[2],
+        'afterResponseMs' => $values[4] - $values[3]
+    ];
+}
+
 try {
     $pdo = database();
 
@@ -91,11 +151,12 @@ try {
             collected_at,
             page_load_start,
             page_load_end,
-            total_load_time_ms
+            total_load_time_ms,
+            navigation_timing
          FROM performance_data
          WHERE collected_at >= :start
            AND collected_at < :end
-         ORDER BY collected_at DESC
+         ORDER BY collected_at DESC, id DESC
          LIMIT 100'
     );
 
@@ -111,7 +172,10 @@ try {
                 'pageLoadStart' => $row['page_load_start'],
                 'pageLoadEnd' => $row['page_load_end'],
                 'totalLoadTimeMs' =>
-                    (float) $row['total_load_time_ms']
+                    $row['total_load_time_ms'] === null
+                        ? null
+                        : (float) $row['total_load_time_ms'],
+                'loadingStages' => performanceLoadingStages($row)
             ];
         },
         $recordStatement->fetchAll()
