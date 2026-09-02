@@ -241,6 +241,12 @@ $defaultStart = $today
                     id="performance-chart"
                     class="horizontal-chart"
                 ></div>
+                <a
+                    href="/reports/performance.php"
+                    class="button button-secondary report-link"
+                >
+                    View detailed performance report
+                </a>
             </section>
 
             <section
