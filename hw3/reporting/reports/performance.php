@@ -173,7 +173,7 @@ $defaultStart =
     <link rel="stylesheet" href="/assets/css/app.css?v=performance-switch-1">
 
     <script
-        src="/assets/js/performance-report.js?v=performance-switch-1"
+        src="/assets/js/performance-report.js?v=performance-summary-2"
         defer
     ></script>
 </head>
@@ -383,31 +383,15 @@ $defaultStart =
         </section>
 
         <section class="panel data-panel">
-            <p class="eyebrow">Detailed measurements</p>
-            <h2>Performance records</h2>
+            <p class="eyebrow">Compare pages</p>
+            <h2 id="performance-stage-values-title">Loading-stage summary</h2>
 
-            <div class="table-wrapper">
-                <table class="data-table">
-                    <caption class="performance-table-caption">
-                        Latest 100 measurements at most; summary cards cover the full date range.
-                    </caption>
-                    <thead>
-                        <tr>
-                            <th scope="col">Collected</th>
-                            <th scope="col">Page</th>
-                            <th scope="col">Load time</th>
-                            <th scope="col">Session</th>
-                        </tr>
-                    </thead>
-
-                    <tbody id="performance-records">
-                        <tr>
-                            <td colspan="4">
-                                Loading performance records...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div
+                id="performance-stage-values"
+                aria-labelledby="performance-stage-values-title"
+                aria-busy="true"
+            >
+                <p class="empty-state">Loading stage summary...</p>
             </div>
         </section>
 

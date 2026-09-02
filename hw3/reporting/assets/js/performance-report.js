@@ -8,7 +8,7 @@
     const resetButton = document.getElementById("performance-reset");
     const status = document.getElementById("performance-status");
     const chart = document.getElementById("performance-page-chart");
-    const tableBody = document.getElementById("performance-records");
+    const stageTable = document.getElementById("performance-stage-values");
     const dotButton = document.getElementById("performance-view-dots");
     const stageButton = document.getElementById("performance-view-stages");
     const chartTitle = document.getElementById("performance-chart-title");
@@ -86,14 +86,7 @@
 
         chart.replaceChildren(paragraph);
 
-        const row = document.createElement("tr");
-        const cell = document.createElement("td");
-
-        cell.colSpan = 4;
-        cell.textContent = message;
-
-        row.appendChild(cell);
-        tableBody.replaceChildren(row);
+        stageTable.replaceChildren(element("p", "empty-state", message));
     }
 
     function validDuration(value) {
@@ -321,14 +314,23 @@
             row.append(rowLabel(group.pageUrl, group.count), track, rowValue(group.total, "average total"));
             chart.appendChild(row);
         });
+    }
 
+    // Keep the same compact grid available with either chart view.
+    function renderStageTable(records) {
+        const groups = stageGroups(records);
+        const validCount = groups.reduce(function (sum, group) { return sum + group.count; }, 0);
         const wrapper = element("div", "table-wrapper performance-stage-table");
         wrapper.tabIndex = 0;
         wrapper.setAttribute("role", "region");
         wrapper.setAttribute("aria-label", "Loading-stage values; scroll horizontally if needed");
         const table = element("table", "data-table");
         table.appendChild(element("caption", "performance-table-caption",
-            "Average stage durations in milliseconds, using only complete measurements in this sample."));
+            "Average durations in milliseconds, using " + validCount + " complete measurements from the latest " +
+            numberFormat.format(records.length) + " of " + numberFormat.format(totalMeasurements) +
+            " records in the selected dates (100 maximum). " + (records.length - validCount) +
+            " with missing or inconsistent timings are excluded. Each row uses the same measurements for all stages. " +
+            "Rows are ordered by average total, slowest first."));
         const head = element("thead", "");
         const headings = element("tr", "");
         ["Page", "Measurements", ...stages.map(function (stage) { return stage.label + " (ms)"; }),
@@ -350,9 +352,16 @@
             row.appendChild(element("td", "", milliseconds(group.total)));
             body.appendChild(row);
         });
+        if (!groups.length) {
+            const row = element("tr", "");
+            const cell = element("td", "empty-state", "No complete loading-stage measurements in this sample.");
+            cell.colSpan = 7;
+            row.appendChild(cell);
+            body.appendChild(row);
+        }
         table.append(head, body);
         wrapper.appendChild(table);
-        chart.appendChild(wrapper);
+        stageTable.replaceChildren(wrapper);
     }
 
     function renderChart() {
@@ -369,7 +378,7 @@
         chartTitle.textContent = dots ? "Individual load times" : "Average loading stages by page";
         chartDescription.textContent = dots
             ? "Each dot is one measured page load. Select a dot to inspect it. " +
-                "Widely separated dots indicate inconsistent loading; the table below has the exact records."
+                "Widely separated dots indicate inconsistent loading. The table below summarizes loading stages by page."
             : "Each bar adds four consecutive stages of the same page loads. " +
                 "Waiting includes network and server effects; after HTML includes remaining resources and page work. " +
                 "These are investigation clues, not proof of a server or network fault.";
@@ -383,56 +392,6 @@
         } else {
             renderStages(chartRecords);
         }
-    }
-
-    function renderRecords(records) {
-        tableBody.replaceChildren();
-
-        if (records.length === 0) {
-            const row = document.createElement("tr");
-            const cell = document.createElement("td");
-
-            cell.colSpan = 4;
-            cell.textContent =
-                "No performance records in this date range.";
-
-            row.appendChild(cell);
-            tableBody.appendChild(row);
-            return;
-        }
-
-        records.forEach(function (record) {
-            const row = document.createElement("tr");
-
-            const collected = document.createElement("td");
-
-            collected.textContent = record.collectedAt
-                ? record.collectedAt + " UTC"
-                : "—";
-
-            const page = document.createElement("td");
-            const name = document.createElement("strong");
-
-            name.textContent = pageLabel(record.pageUrl);
-
-            const url = document.createElement("small");
-
-            url.className = "url-detail";
-            url.textContent = record.pageUrl;
-
-            page.append(name, url);
-
-            const loadTime = document.createElement("td");
-            loadTime.textContent = duration(record.totalLoadTimeMs);
-
-            const session = document.createElement("td");
-
-            session.className = "performance-session";
-            session.textContent = String(record.sessionId || "—");
-
-            row.append(collected, page, loadTime, session);
-            tableBody.appendChild(row);
-        });
     }
 
     function renderReport(payload) {
@@ -464,17 +423,17 @@
         dotButton.disabled = false;
         stageButton.disabled = false;
         renderChart();
-        renderRecords(payload.records);
+        renderStageTable(payload.records);
 
         status.className = "status-message status-success";
 
         status.textContent =
             "Data from " + payload.dateRange.start +
             " through " + payload.dateRange.end +
-            " (UTC). Showing the latest " +
+            " (UTC). Using the latest " +
             numberFormat.format(payload.records.length) +
             " of " + numberFormat.format(count) +
-            " measurements in the table.";
+            " measurements for charts and the stage summary; see sample notes for exclusions.";
     }
 
     async function loadReport() {
@@ -492,6 +451,7 @@
         status.className = "status-message";
         status.textContent = "Loading performance data...";
         chart.setAttribute("aria-busy", "true");
+        stageTable.setAttribute("aria-busy", "true");
 
         showPlaceholder("Loading performance data...");
 
@@ -569,6 +529,7 @@
                 applyButton.disabled = false;
                 resetButton.disabled = false;
                 chart.setAttribute("aria-busy", "false");
+                stageTable.setAttribute("aria-busy", "false");
             }
         }
     }
