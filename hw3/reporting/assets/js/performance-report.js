@@ -1,13 +1,13 @@
 (function () {
     "use strict";
 
-    const form = document.getElementById("performance-filter");
+    const filterForm = document.getElementById("performance-filter");
     const startInput = document.getElementById("performance-start");
     const endInput = document.getElementById("performance-end");
     const applyButton = document.getElementById("performance-apply");
     const resetButton = document.getElementById("performance-reset");
-    const status = document.getElementById("performance-status");
-    const chart = document.getElementById("performance-page-chart");
+    const statusMessage = document.getElementById("performance-status");
+    const loadTimeChart = document.getElementById("performance-page-chart");
     const stageTable = document.getElementById("performance-stage-values");
     const dotButton = document.getElementById("performance-view-dots");
     const stageButton = document.getElementById("performance-view-stages");
@@ -23,7 +23,7 @@
         { key: "afterResponseMs", label: "After HTML to load end", className: "after" }
     ];
 
-    const numberFormat = new Intl.NumberFormat("en-US");
+    const numberFormatter = new Intl.NumberFormat("en-US");
 
     const metricIds = [
         "performance-measurements",
@@ -32,17 +32,17 @@
         "performance-slowest"
     ];
 
-    let requestNumber = 0;
-    let activeRequest = null;
-    let chartView = "dots";
-    let chartRecords = null;
+    let latestRequestId = 0;
+    let requestController = null;
+    let selectedChart = "dots";
+    let sampleRecords = null;
     let totalMeasurements = 0;
 
     function setText(id, value) {
         document.getElementById(id).textContent = value;
     }
 
-    function duration(value) {
+    function formatDuration(value) {
         if (value === null || value === undefined) {
             return "—";
         }
@@ -58,7 +58,7 @@
             : milliseconds.toFixed(1) + " ms";
     }
 
-    function pageLabel(value) {
+    function getPageLabel(value) {
         try {
             const url = new URL(value);
 
@@ -69,7 +69,7 @@
     }
 
     function showPlaceholder(message) {
-        chartRecords = null;
+        sampleRecords = null;
         dotButton.disabled = true;
         stageButton.disabled = true;
         chartNote.textContent = "";
@@ -84,23 +84,23 @@
         paragraph.className = "empty-state";
         paragraph.textContent = message;
 
-        chart.replaceChildren(paragraph);
+        loadTimeChart.replaceChildren(paragraph);
 
-        stageTable.replaceChildren(element("p", "empty-state", message));
+        stageTable.replaceChildren(createElement("p", "empty-state", message));
     }
 
-    function validDuration(value) {
+    function isValidDuration(value) {
         return typeof value === "number" && Number.isFinite(value) && value >= 0;
     }
 
-    function milliseconds(value) {
+    function formatMilliseconds(value) {
         return new Intl.NumberFormat("en-US", {
             maximumFractionDigits: 1
         }).format(value);
     }
 
-    // A shared zero-based scale for every page in the selected view.
-    function axisMaximum(value) {
+    // Round up to a readable scale and use it for every page in this view.
+    function getAxisMaximum(value) {
         if (value <= 0) {
             return 1;
         }
@@ -113,7 +113,7 @@
         return step * power;
     }
 
-    function element(tag, className, text) {
+    function createElement(tag, className, text) {
         const node = document.createElement(tag);
         node.className = className;
 
@@ -125,68 +125,68 @@
     }
 
     function addAxis(maximum) {
-        const row = element("div", "performance-viz-row performance-viz-axis-row");
-        const axis = element("div", "performance-viz-axis");
+        const row = createElement("div", "performance-viz-row performance-viz-axis-row");
+        const axis = createElement("div", "performance-viz-axis");
 
         for (let index = 0; index <= 4; index++) {
-            const tick = element("span", "performance-viz-tick",
-                milliseconds(maximum * index / 4));
+            const tick = createElement("span", "performance-viz-tick",
+                formatMilliseconds(maximum * index / 4));
             tick.style.left = (index * 25) + "%";
             axis.appendChild(tick);
         }
 
-        row.append(element("span", "performance-axis-label", "Load time (ms)"),
-            axis, element("span", ""));
-        chart.appendChild(row);
+        row.append(createElement("span", "performance-axis-label", "Load time (ms)"),
+            axis, createElement("span", ""));
+        loadTimeChart.appendChild(row);
     }
 
-    function rowLabel(url, count) {
-        const label = element("div", "performance-viz-label", pageLabel(url));
+    function createPageLabel(url, count) {
+        const label = createElement("div", "performance-viz-label", getPageLabel(url));
         label.title = url;
-        label.appendChild(element("small", "chart-samples",
-            numberFormat.format(count) + (count === 1 ? " measurement" : " measurements")));
+        label.appendChild(createElement("small", "chart-samples",
+            numberFormatter.format(count) + (count === 1 ? " measurement" : " measurements")));
         return label;
     }
 
-    function rowValue(value, label) {
-        const node = element("div", "performance-viz-value");
-        node.append(element("strong", "", duration(value)),
-            element("small", "", label));
+    function createTimingLabel(value, label) {
+        const node = createElement("div", "performance-viz-value");
+        node.append(createElement("strong", "", formatDuration(value)),
+            createElement("small", "", label));
         return node;
     }
 
     function emptyChart(message) {
-        chart.appendChild(element("p", "empty-state", message));
+        loadTimeChart.appendChild(createElement("p", "empty-state", message));
     }
 
     function renderDots(records) {
-        const usable = records.filter(function (record) {
-            return validDuration(record.totalLoadTimeMs);
+        const validRecords = records.filter(function (record) {
+            return isValidDuration(record.totalLoadTimeMs);
         });
-        const grouped = new Map();
+        const recordsByPage = new Map();
 
-        usable.forEach(function (record) {
-            if (!grouped.has(record.pageUrl)) {
-                grouped.set(record.pageUrl, []);
+        validRecords.forEach(function (record) {
+            if (!recordsByPage.has(record.pageUrl)) {
+                recordsByPage.set(record.pageUrl, []);
             }
-            grouped.get(record.pageUrl).push(record);
+            recordsByPage.get(record.pageUrl).push(record);
         });
 
-        chartNote.textContent += " " + usable.length + " dots; " +
-            (records.length - usable.length) + " records without a valid total omitted. " +
+        chartNote.textContent += " " + validRecords.length + " dots; " +
+            (records.length - validRecords.length) + " records without a valid total omitted. " +
             "Vertical spacing only separates nearby dots; it does not represent another metric.";
 
-        if (!usable.length) {
+        if (!validRecords.length) {
             emptyChart("No valid individual load times in this date range.");
             return;
         }
 
-        const maximum = axisMaximum(Math.max(...usable.map(function (record) {
+        const maximum = getAxisMaximum(Math.max(...validRecords.map(function (record) {
             return record.totalLoadTimeMs;
         })));
         addAxis(maximum);
 
-        const groups = Array.from(grouped.entries()).sort(function (a, b) {
+        const groups = Array.from(recordsByPage.entries()).sort(function (a, b) {
             return Math.max(...b[1].map(function (r) { return r.totalLoadTimeMs; })) -
                 Math.max(...a[1].map(function (r) { return r.totalLoadTimeMs; }));
         });
@@ -196,23 +196,24 @@
             const measurements = group[1].slice().sort(function (a, b) {
                 return a.totalLoadTimeMs - b.totalLoadTimeMs;
             });
-            const row = element("div", "performance-viz-row");
-            const plot = element("div", "performance-viz-plot");
-            const lanes = [];
+            const row = createElement("div", "performance-viz-row");
+            const plot = createElement("div", "performance-viz-plot");
+            const lastDotByLane = [];
 
             measurements.forEach(function (record) {
+                // Stack nearby dots vertically so each one can be selected.
                 const position = record.totalLoadTimeMs / maximum * 100;
-                let lane = lanes.findIndex(function (lastPosition) {
+                let lane = lastDotByLane.findIndex(function (lastPosition) {
                     return position - lastPosition >= 12;
                 });
                 if (lane === -1) {
-                    lane = lanes.length;
+                    lane = lastDotByLane.length;
                 }
-                lanes[lane] = position;
+                lastDotByLane[lane] = position;
 
-                const dot = element("button", "performance-dot");
-                const description = "Record " + record.id + ": " + pageLabel(url) +
-                    ", " + milliseconds(record.totalLoadTimeMs) + " ms, " +
+                const dot = createElement("button", "performance-dot");
+                const description = "Record " + record.id + ": " + getPageLabel(url) +
+                    ", " + formatMilliseconds(record.totalLoadTimeMs) + " ms, " +
                     record.collectedAt + " UTC";
                 dot.type = "button";
                 dot.title = description;
@@ -222,7 +223,7 @@
                 dot.setAttribute("aria-pressed", "false");
                 dot.setAttribute("aria-controls", "performance-chart-detail");
                 dot.addEventListener("click", function () {
-                    chart.querySelectorAll(".performance-dot").forEach(function (other) {
+                    loadTimeChart.querySelectorAll(".performance-dot").forEach(function (other) {
                         other.setAttribute("aria-pressed", "false");
                     });
                     dot.setAttribute("aria-pressed", "true");
@@ -232,20 +233,20 @@
                 plot.appendChild(dot);
             });
 
-            plot.style.height = Math.max(48, lanes.length * 28 + 8) + "px";
+            plot.style.height = Math.max(48, lastDotByLane.length * 28 + 8) + "px";
             const slowest = measurements[measurements.length - 1].totalLoadTimeMs;
-            row.append(rowLabel(url, measurements.length), plot, rowValue(slowest, "slowest"));
-            chart.appendChild(row);
+            row.append(createPageLabel(url, measurements.length), plot, createTimingLabel(slowest, "slowest"));
+            loadTimeChart.appendChild(row);
         });
     }
 
-    function stageGroups(records) {
+    function groupLoadingStages(records) {
         const groups = new Map();
 
         records.forEach(function (record) {
             const timing = record.loadingStages;
-            if (!timing || !validDuration(record.totalLoadTimeMs) ||
-                !stages.every(function (stage) { return validDuration(timing[stage.key]); })) {
+            if (!timing || !isValidDuration(record.totalLoadTimeMs) ||
+                !stages.every(function (stage) { return isValidDuration(timing[stage.key]); })) {
                 return;
             }
             const total = stages.reduce(function (sum, stage) {
@@ -277,7 +278,7 @@
     }
 
     function renderStages(records) {
-        const groups = stageGroups(records);
+        const groups = groupLoadingStages(records);
         const validCount = groups.reduce(function (sum, group) { return sum + group.count; }, 0);
         chartNote.textContent += " Stage averages use " + validCount + " complete measurements; " +
             (records.length - validCount) + " with missing or inconsistent timings are excluded.";
@@ -288,73 +289,73 @@
             return;
         }
 
-        const legend = element("ul", "performance-stage-legend");
+        const legend = createElement("ul", "performance-stage-legend");
         stages.forEach(function (stage) {
-            const item = element("li", "");
-            const swatch = element("span", "performance-stage-swatch performance-stage-" + stage.className);
+            const item = createElement("li", "");
+            const swatch = createElement("span", "performance-stage-swatch performance-stage-" + stage.className);
             swatch.setAttribute("aria-hidden", "true");
-            item.append(swatch, element("span", "", stage.label));
+            item.append(swatch, createElement("span", "", stage.label));
             legend.appendChild(item);
         });
-        chart.appendChild(legend);
+        loadTimeChart.appendChild(legend);
 
-        const maximum = axisMaximum(Math.max(...groups.map(function (group) { return group.total; })));
+        const maximum = getAxisMaximum(Math.max(...groups.map(function (group) { return group.total; })));
         addAxis(maximum);
 
         groups.forEach(function (group) {
-            const row = element("div", "performance-viz-row");
-            const track = element("div", "performance-viz-stack");
+            const row = createElement("div", "performance-viz-row");
+            const track = createElement("div", "performance-viz-stack");
             track.setAttribute("aria-hidden", "true");
             stages.forEach(function (stage) {
-                const segment = element("span", "performance-stage-segment performance-stage-" + stage.className);
+                const segment = createElement("span", "performance-stage-segment performance-stage-" + stage.className);
                 segment.style.width = (group[stage.key] / maximum * 100) + "%";
-                segment.title = stage.label + ": " + milliseconds(group[stage.key]) + " ms";
+                segment.title = stage.label + ": " + formatMilliseconds(group[stage.key]) + " ms";
                 track.appendChild(segment);
             });
-            row.append(rowLabel(group.pageUrl, group.count), track, rowValue(group.total, "average total"));
-            chart.appendChild(row);
+            row.append(createPageLabel(group.pageUrl, group.count), track, createTimingLabel(group.total, "average total"));
+            loadTimeChart.appendChild(row);
         });
     }
 
-    // Keep the same compact grid available with either chart view.
+    // Keep the same table below both chart views.
     function renderStageTable(records) {
-        const groups = stageGroups(records);
+        const groups = groupLoadingStages(records);
         const validCount = groups.reduce(function (sum, group) { return sum + group.count; }, 0);
-        const wrapper = element("div", "table-wrapper performance-stage-table");
+        const wrapper = createElement("div", "table-wrapper performance-stage-table");
         wrapper.tabIndex = 0;
         wrapper.setAttribute("role", "region");
         wrapper.setAttribute("aria-label", "Loading-stage values; scroll horizontally if needed");
-        const table = element("table", "data-table");
-        table.appendChild(element("caption", "performance-table-caption",
+        const table = createElement("table", "data-table");
+        table.appendChild(createElement("caption", "performance-table-caption",
             "Average durations in milliseconds, using " + validCount + " complete measurements from the latest " +
-            numberFormat.format(records.length) + " of " + numberFormat.format(totalMeasurements) +
+            numberFormatter.format(records.length) + " of " + numberFormatter.format(totalMeasurements) +
             " records in the selected dates (100 maximum). " + (records.length - validCount) +
             " with missing or inconsistent timings are excluded. Each row uses the same measurements for all stages. " +
             "Rows are ordered by average total, slowest first."));
-        const head = element("thead", "");
-        const headings = element("tr", "");
+        const head = createElement("thead", "");
+        const headings = createElement("tr", "");
         ["Page", "Measurements", ...stages.map(function (stage) { return stage.label + " (ms)"; }),
             "Total (ms)"].forEach(function (label) {
-            const cell = element("th", "", label);
+            const cell = createElement("th", "", label);
             cell.setAttribute("scope", "col");
             headings.appendChild(cell);
         });
         head.appendChild(headings);
-        const body = element("tbody", "");
+        const body = createElement("tbody", "");
         groups.forEach(function (group) {
-            const row = element("tr", "");
-            const page = element("td", "url-detail", pageLabel(group.pageUrl));
+            const row = createElement("tr", "");
+            const page = createElement("td", "url-detail", getPageLabel(group.pageUrl));
             page.title = group.pageUrl;
-            row.append(page, element("td", "", numberFormat.format(group.count)));
+            row.append(page, createElement("td", "", numberFormatter.format(group.count)));
             stages.forEach(function (stage) {
-                row.appendChild(element("td", "", milliseconds(group[stage.key])));
+                row.appendChild(createElement("td", "", formatMilliseconds(group[stage.key])));
             });
-            row.appendChild(element("td", "", milliseconds(group.total)));
+            row.appendChild(createElement("td", "", formatMilliseconds(group.total)));
             body.appendChild(row);
         });
         if (!groups.length) {
-            const row = element("tr", "");
-            const cell = element("td", "empty-state", "No complete loading-stage measurements in this sample.");
+            const row = createElement("tr", "");
+            const cell = createElement("td", "empty-state", "No complete loading-stage measurements in this sample.");
             cell.colSpan = 7;
             row.appendChild(cell);
             body.appendChild(row);
@@ -365,14 +366,14 @@
     }
 
     function renderChart() {
-        if (chartRecords === null) {
+        if (sampleRecords === null) {
             return;
         }
 
-        chart.replaceChildren();
+        loadTimeChart.replaceChildren();
         chartDetail.hidden = true;
         chartDetail.textContent = "";
-        const dots = chartView === "dots";
+        const dots = selectedChart === "dots";
         dotButton.setAttribute("aria-pressed", String(dots));
         stageButton.setAttribute("aria-pressed", String(!dots));
         chartTitle.textContent = dots ? "Individual load times" : "Average loading stages by page";
@@ -383,14 +384,14 @@
                 "Waiting includes network and server effects; after HTML includes remaining resources and page work. " +
                 "These are investigation clues, not proof of a server or network fault.";
 
-        chartNote.textContent = "Chart sample: latest " + numberFormat.format(chartRecords.length) +
-            " of " + numberFormat.format(totalMeasurements) + " records in the selected dates (100 maximum). " +
+        chartNote.textContent = "Chart sample: latest " + numberFormatter.format(sampleRecords.length) +
+            " of " + numberFormatter.format(totalMeasurements) + " records in the selected dates (100 maximum). " +
             "Summary cards cover the full date range.";
 
         if (dots) {
-            renderDots(chartRecords);
+            renderDots(sampleRecords);
         } else {
-            renderStages(chartRecords);
+            renderStages(sampleRecords);
         }
     }
 
@@ -400,57 +401,58 @@
 
         setText(
             "performance-measurements",
-            numberFormat.format(count)
+            numberFormatter.format(count)
         );
 
         setText(
             "performance-average",
-            count > 0 ? duration(summary.averageLoadTimeMs) : "—"
+            count > 0 ? formatDuration(summary.averageLoadTimeMs) : "—"
         );
 
         setText(
             "performance-fastest",
-            count > 0 ? duration(summary.fastestLoadTimeMs) : "—"
+            count > 0 ? formatDuration(summary.fastestLoadTimeMs) : "—"
         );
 
         setText(
             "performance-slowest",
-            count > 0 ? duration(summary.slowestLoadTimeMs) : "—"
+            count > 0 ? formatDuration(summary.slowestLoadTimeMs) : "—"
         );
 
-        chartRecords = payload.records;
+        sampleRecords = payload.records;
         totalMeasurements = count;
         dotButton.disabled = false;
         stageButton.disabled = false;
         renderChart();
         renderStageTable(payload.records);
 
-        status.className = "status-message status-success";
+        statusMessage.className = "status-message status-success";
 
-        status.textContent =
+        statusMessage.textContent =
             "Data from " + payload.dateRange.start +
             " through " + payload.dateRange.end +
             " (UTC). Using the latest " +
-            numberFormat.format(payload.records.length) +
-            " of " + numberFormat.format(count) +
+            numberFormatter.format(payload.records.length) +
+            " of " + numberFormatter.format(count) +
             " measurements for charts and the stage summary; see sample notes for exclusions.";
     }
 
     async function loadReport() {
-        const thisRequest = ++requestNumber;
+        // Ignore old filter responses, even if aborting the request was too late.
+        const requestId = ++latestRequestId;
 
-        if (activeRequest) {
-            activeRequest.abort();
+        if (requestController) {
+            requestController.abort();
         }
 
-        activeRequest = new AbortController();
+        requestController = new AbortController();
 
         applyButton.disabled = true;
         resetButton.disabled = true;
 
-        status.className = "status-message";
-        status.textContent = "Loading performance data...";
-        chart.setAttribute("aria-busy", "true");
+        statusMessage.className = "status-message";
+        statusMessage.textContent = "Loading performance data...";
+        loadTimeChart.setAttribute("aria-busy", "true");
         stageTable.setAttribute("aria-busy", "true");
 
         showPlaceholder("Loading performance data...");
@@ -469,11 +471,11 @@
                     },
                     credentials: "same-origin",
                     cache: "no-store",
-                    signal: activeRequest.signal
+                    signal: requestController.signal
                 }
             );
 
-            if (thisRequest !== requestNumber) {
+            if (requestId !== latestRequestId) {
                 return;
             }
 
@@ -486,7 +488,7 @@
                 return {};
             });
 
-            if (thisRequest !== requestNumber) {
+            if (requestId !== latestRequestId) {
                 return;
             }
 
@@ -512,7 +514,7 @@
             renderReport(payload);
         } catch (error) {
             if (
-                thisRequest !== requestNumber ||
+                requestId !== latestRequestId ||
                 error.name === "AbortError"
             ) {
                 return;
@@ -520,42 +522,42 @@
 
             showPlaceholder("Report data is unavailable.");
 
-            status.className = "status-message status-error";
+            statusMessage.className = "status-message status-error";
 
-            status.textContent =
+            statusMessage.textContent =
                 error.message || "Unable to load the report.";
         } finally {
-            if (thisRequest === requestNumber) {
+            if (requestId === latestRequestId) {
                 applyButton.disabled = false;
                 resetButton.disabled = false;
-                chart.setAttribute("aria-busy", "false");
+                loadTimeChart.setAttribute("aria-busy", "false");
                 stageTable.setAttribute("aria-busy", "false");
             }
         }
     }
 
-    form.addEventListener("submit", function (event) {
+    filterForm.addEventListener("submit", function (event) {
         event.preventDefault();
 
-        if (form.reportValidity()) {
+        if (filterForm.reportValidity()) {
             loadReport();
         }
     });
 
     resetButton.addEventListener("click", function () {
-        startInput.value = form.dataset.defaultStart;
-        endInput.value = form.dataset.defaultEnd;
+        startInput.value = filterForm.dataset.defaultStart;
+        endInput.value = filterForm.dataset.defaultEnd;
 
         loadReport();
     });
 
     dotButton.addEventListener("click", function () {
-        chartView = "dots";
+        selectedChart = "dots";
         renderChart();
     });
 
     stageButton.addEventListener("click", function () {
-        chartView = "stages";
+        selectedChart = "stages";
         renderChart();
     });
 

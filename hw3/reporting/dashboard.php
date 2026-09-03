@@ -9,7 +9,7 @@ $user = requireRole([
     'analyst'
 ]);
 
-$messages = consumeFlashMessages();
+$messages = getFlashMessages();
 $canViewPerformance = userCanAccessSection($user, 'performance');
 
 $roleName = ucwords(

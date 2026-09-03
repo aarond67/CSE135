@@ -36,7 +36,8 @@ function setFlashMessage(
     ];
 }
 
-function consumeFlashMessages(): array
+// Read these once, then clear them so a refresh does not repeat the message.
+function getFlashMessages(): array
 {
     $messages = $_SESSION['flash_messages'] ?? [];
 

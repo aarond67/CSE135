@@ -20,7 +20,7 @@ function allowedAnalyticsSections(): array
     ];
 }
 
-function listDashboardUsers(): array
+function listUsers(): array
 {
     $statement = database()->query(
         'SELECT
@@ -68,7 +68,7 @@ function listDashboardUsers(): array
     return $users;
 }
 
-function findDashboardUser(int $userId): ?array
+function findUser(int $userId): ?array
 {
     $statement = database()->prepare(
         'SELECT
@@ -113,7 +113,7 @@ function findDashboardUser(int $userId): ?array
     return $user;
 }
 
-function validateDashboardUserInput(
+function validateUserInput(
     array $input,
     bool $passwordRequired
 ): array {
@@ -194,12 +194,13 @@ function validateDashboardUserInput(
     ];
 }
 
-function saveUserSectionPermissions(
+function saveUserSections(
     PDO $connection,
     int $userId,
     string $role,
     array $sections
 ): void {
+    // Replace the old choices. Only analysts need individual section grants.
     $delete = $connection->prepare(
         'DELETE FROM user_section_permissions
          WHERE user_id = :user_id'
@@ -231,7 +232,7 @@ function saveUserSectionPermissions(
     }
 }
 
-function createDashboardUser(array $data): int
+function createUser(array $data): int
 {
     $connection = database();
     $connection->beginTransaction();
@@ -274,7 +275,7 @@ function createDashboardUser(array $data): int
 
         $userId = (int) $connection->lastInsertId();
 
-        saveUserSectionPermissions(
+        saveUserSections(
             $connection,
             $userId,
             $data['role'],
@@ -293,12 +294,12 @@ function createDashboardUser(array $data): int
     }
 }
 
-function updateDashboardUser(
+function updateUser(
     int $userId,
     int $currentUserId,
     array $data
 ): void {
-    $existingUser = findDashboardUser($userId);
+    $existingUser = findUser($userId);
 
     if ($existingUser === null) {
         throw new DomainException(
@@ -365,7 +366,7 @@ function updateDashboardUser(
             ]);
         }
 
-        saveUserSectionPermissions(
+        saveUserSections(
             $connection,
             $userId,
             $data['role'],
@@ -382,7 +383,7 @@ function updateDashboardUser(
     }
 }
 
-function deleteDashboardUser(
+function deleteUser(
     int $userId,
     int $currentUserId
 ): void {
@@ -392,7 +393,7 @@ function deleteDashboardUser(
         );
     }
 
-    if (findDashboardUser($userId) === null) {
+    if (findUser($userId) === null) {
         throw new DomainException(
             'The selected user does not exist.'
         );

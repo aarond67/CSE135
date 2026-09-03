@@ -141,7 +141,7 @@ $savedReport =
 $analystComments =
     $savedReport['analyst_comments'] ?? '';
 
-$messages = consumeFlashMessages();
+$messages = getFlashMessages();
 
 $roleName = ucwords(
     str_replace('_', ' ', $user['role'])

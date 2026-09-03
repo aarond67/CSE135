@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Return a JSON response and stop the request.
- */
 function apiResponse(
     array $body,
     int $status = 200
@@ -22,9 +19,7 @@ function apiResponse(
     exit;
 }
 
-/**
- * Only permit GET requests for reporting endpoints.
- */
+// The overview and performance APIs only read data.
 function requireApiGetRequest(): void
 {
     $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -39,12 +34,7 @@ function requireApiGetRequest(): void
     }
 }
 
-/**
- * Require an authenticated user with one of the allowed roles.
- *
- * Unlike requireLogin(), this returns JSON instead of redirecting
- * the request to the login page.
- */
+// API callers need a JSON error, not the HTML login page.
 function requireApiUser(array $allowedRoles): array
 {
     $user = currentUser();
@@ -72,9 +62,6 @@ function requireApiUser(array $allowedRoles): array
     return $user;
 }
 
-/**
- * Require permission for a particular analytics section.
- */
 function requireApiSection(string $section): array
 {
     $user = requireApiUser([
@@ -92,9 +79,7 @@ function requireApiSection(string $section): array
     return $user;
 }
 
-/**
- * Convert a YYYY-MM-DD string into a UTC date.
- */
+// Reject invalid dates instead of letting PHP roll them into another month.
 function parseApiDate(mixed $value): ?DateTimeImmutable
 {
     if (!is_string($value) || $value === '') {
@@ -128,11 +113,7 @@ function parseApiDate(mixed $value): ?DateTimeImmutable
     return $date;
 }
 
-/**
- * Read and validate the dashboard's start and end dates.
- *
- * The default range is the latest 30 calendar days.
- */
+// Default to today and the previous 29 days, all in UTC.
 function getApiDateRange(): array
 {
     $timezone = new DateTimeZone('UTC');
@@ -177,6 +158,7 @@ function getApiDateRange(): array
         );
     }
 
+    // Stop at the next midnight so the whole end date is included.
     $endExclusive = $endDate->modify('+1 day');
 
     return [

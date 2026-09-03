@@ -6,33 +6,33 @@ require_once __DIR__ . '/includes/bootstrap.php';
 
 requireGuest();
 
-$identifier = '';
+$loginName = '';
 $error = null;
-$messages = consumeFlashMessages();
+$messages = getFlashMessages();
 
 if (($_GET['logged_out'] ?? '') === '1') {
     $messages[] = [
         'type' => 'success',
-        'message' => 'You have been signed out.'
+        'message' => 'You are signed out.'
     ];
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireValidCsrfToken();
 
-    $identifier = trim((string) ($_POST['identifier'] ?? ''));
+    $loginName = trim((string) ($_POST['identifier'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
 
-    if (attemptLogin($identifier, $password)) {
+    if (attemptLogin($loginName, $password)) {
         setFlashMessage(
             'success',
-            'You successfully signed in.'
+            'You are signed in.'
         );
 
         redirect('/dashboard.php');
     }
 
-    $error = 'The username, email, or password was incorrect.';
+    $error = 'That username, email, or password did not match. Please try again.';
 }
 ?>
 <!DOCTYPE html>
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     id="identifier"
                     name="identifier"
                     type="text"
-                    value="<?= escape($identifier) ?>"
+                    value="<?= escape($loginName) ?>"
                     autocomplete="username"
                     required
                     autofocus

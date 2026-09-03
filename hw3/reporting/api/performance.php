@@ -10,17 +10,14 @@ requireApiSection('performance');
 
 $dateRange = getApiDateRange();
 
-$queryParameters = [
+$dateParams = [
     'start' => $dateRange['sql_start'],
     'end' => $dateRange['sql_end_exclusive']
 ];
 
-/**
- * Four consecutive, non-overlapping intervals from the same navigation.
- * Missing, non-numeric, incomplete, or inconsistent timings are not zeroes.
- * See https://developer.mozilla.org/en-US/docs/Web/API/PerformanceNavigationTiming
- */
-function performanceLoadingStages(array $row): ?array
+// Split one page load into four stages. Missing or inconsistent timing stays
+// unavailable; treating it as zero would make the page look faster.
+function getLoadingStages(array $row): ?array
 {
     $timing = json_decode($row['navigation_timing'] ?? '', true);
 
@@ -78,9 +75,7 @@ function performanceLoadingStages(array $row): ?array
 try {
     $pdo = database();
 
-    /*
-     * Overall performance summary.
-     */
+    // These cards use every performance record in the selected dates.
     $summaryStatement = $pdo->prepare(
         'SELECT
             COUNT(*) AS measurements,
@@ -95,14 +90,12 @@ try {
            AND collected_at < :end'
     );
 
-    $summaryStatement->execute($queryParameters);
+    $summaryStatement->execute($dateParams);
 
     $summaryRow =
         $summaryStatement->fetch() ?: [];
 
-    /*
-     * Performance grouped by page.
-     */
+    // Keep the per-page summary available to API callers.
     $pageStatement = $pdo->prepare(
         'SELECT
             page_url,
@@ -121,7 +114,7 @@ try {
                   page_url ASC'
     );
 
-    $pageStatement->execute($queryParameters);
+    $pageStatement->execute($dateParams);
 
     $pageRows = array_map(
         static function (array $row): array {
@@ -140,9 +133,7 @@ try {
         $pageStatement->fetchAll()
     );
 
-    /*
-     * Individual performance measurements for the data table.
-     */
+    // The two chart views and stage grid share the latest 100 records.
     $recordStatement = $pdo->prepare(
         'SELECT
             id,
@@ -160,7 +151,7 @@ try {
          LIMIT 100'
     );
 
-    $recordStatement->execute($queryParameters);
+    $recordStatement->execute($dateParams);
 
     $records = array_map(
         static function (array $row): array {
@@ -175,7 +166,7 @@ try {
                     $row['total_load_time_ms'] === null
                         ? null
                         : (float) $row['total_load_time_ms'],
-                'loadingStages' => performanceLoadingStages($row)
+                'loadingStages' => getLoadingStages($row)
             ];
         },
         $recordStatement->fetchAll()

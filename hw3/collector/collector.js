@@ -1,8 +1,8 @@
-// collector.js — CSE 135 HW3 analytics collector
+// Collect test-site activity and send it to the PHP endpoint.
 (function () {
     "use strict";
 
-    const ENDPOINT = "https://collector.baddecisions.site/log/";
+    const COLLECTOR_URL = "https://collector.baddecisions.site/log/";
     const SESSION_STORAGE_KEY = "_collector_sid";
     const SESSION_COOKIE_NAME = "_collector_sid";
 
@@ -43,21 +43,22 @@
 
     const sessionId = getSessionId();
 
-    function send(payload) {
+    // Try a beacon first so queued data can still leave during navigation.
+    function sendPayload(payload) {
         const json = JSON.stringify(payload);
         const blob = new Blob([json], {
             type: "application/json"
         });
 
         if (typeof navigator.sendBeacon === "function") {
-            const accepted = navigator.sendBeacon(ENDPOINT, blob);
+            const accepted = navigator.sendBeacon(COLLECTOR_URL, blob);
 
             if (accepted) {
                 return;
             }
         }
 
-        fetch(ENDPOINT, {
+        fetch(COLLECTOR_URL, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -89,9 +90,11 @@
             data: data
         });
     }
+
     queueActivity("page-enter", {
         enteredAt: new Date(pageEnteredAt).toISOString()
     });
+
     function startIdleTimer() {
         window.clearTimeout(idleTimer);
 
@@ -134,25 +137,25 @@
         };
 
         console.log("[Collector] Sending activity batch:", payload);
-        send(payload);
+        sendPayload(payload);
     }
 
-    // The checkout demo emits this only after showing "Order Placed!".
-    // Ignore event details: no form values or payment data are collected here.
-    let demoSuccessReported = false;
+    // Checkout sends this after showing "Order Placed!", not after a real payment.
+    // Ignore event details so this event never includes checkout form values.
+    let demoSuccessSent = false;
 
     window.addEventListener("cse135:demo-order-success", function () {
         if (
-            demoSuccessReported ||
+            demoSuccessSent ||
             window.location.origin !== "https://test.baddecisions.site" ||
             window.location.pathname !== "/checkout.html"
         ) {
             return;
         }
 
-        // Its duplicated submit handler can show success more than once.
-        // Send at most once per page load; reporting also deduplicates sessions.
-        demoSuccessReported = true;
+        // The demo calls submit twice. Count the message once per page load;
+        // the dashboard separately counts each qualifying session once.
+        demoSuccessSent = true;
         queueActivity("demo-order-success", { demo: true });
         sendActivityBatch();
     });
@@ -201,10 +204,11 @@
         }
     );
 
-    function recordedKey(event) {
+    function getRecordedKey(event) {
         const element = event.target;
         const tagName = element && element.tagName;
 
+        // Keep single-character typing out of the standard form-field events.
         if (
             tagName === "INPUT" ||
             tagName === "TEXTAREA" ||
@@ -220,13 +224,13 @@
 
     window.addEventListener("keydown", function (event) {
         queueActivity("keydown", {
-            key: recordedKey(event)
+            key: getRecordedKey(event)
         });
     });
 
     window.addEventListener("keyup", function (event) {
         queueActivity("keyup", {
-            key: recordedKey(event)
+            key: getRecordedKey(event)
         });
     });
 
@@ -245,6 +249,7 @@
     startIdleTimer();
 
     window.setInterval(sendActivityBatch, ACTIVITY_SEND_INTERVAL);
+
     function cookiesAreEnabled() {
         const testCookie = "_collector_cookie_test";
 
@@ -348,7 +353,7 @@
         });
     }
 
-    function getNetworkInformation() {
+    function getNetworkInfo() {
         const connection =
             navigator.connection ||
             navigator.mozConnection ||
@@ -396,7 +401,7 @@
                 height: window.innerHeight
             },
 
-            network: getNetworkInformation()
+            network: getNetworkInfo()
         };
     }
     function getPerformanceData() {
@@ -423,7 +428,7 @@
                 Math.round(totalLoadTime * 100) / 100
         };
     }
-    function reportPerformanceData() {
+    function sendPerformanceData() {
         const performanceData = getPerformanceData();
         if (
             performanceData === null ||
@@ -442,24 +447,24 @@
             data: performanceData
         };
         console.log("[Collector] Sending performance data:", payload);
-        send(payload);
+        sendPayload(payload);
     }
 
-    function reportPageView() {
-            const payload = {
-                type: "pageview",
-                sessionId: sessionId,
-                url: window.location.href,
-                title: document.title,
-                referrer: document.referrer,
-                timestamp: new Date().toISOString()
-            };
+    function sendPageView() {
+        const payload = {
+            type: "pageview",
+            sessionId: sessionId,
+            url: window.location.href,
+            title: document.title,
+            referrer: document.referrer,
+            timestamp: new Date().toISOString()
+        };
 
-            console.log("[Collector] Sending pageview:", payload);
-            send(payload);
+        console.log("[Collector] Sending pageview:", payload);
+        sendPayload(payload);
     }
 
-    async function reportStaticData() {
+    async function sendStaticData() {
         const payload = {
             type: "static",
             sessionId: sessionId,
@@ -469,9 +474,9 @@
         };
 
         console.log("[Collector] Sending static data:", payload);
-        send(payload);
+        sendPayload(payload);
     }
-    function reportError(errorData) {
+    function sendError(errorData) {
         const payload = {
             type: "error",
             sessionId: sessionId,
@@ -481,11 +486,11 @@
         };
 
         console.log("[Collector] Sending error:", payload);
-        send(payload);
+        sendPayload(payload);
     }
 
     window.addEventListener("error", function (event) {
-        reportError({
+        sendError({
             eventType: "javascript-error",
             message: event.message || "Unknown JavaScript error",
             filename: event.filename || null,
@@ -501,7 +506,7 @@
     window.addEventListener("unhandledrejection", function (event) {
         const reason = event.reason;
 
-        reportError({
+        sendError({
             eventType: "unhandled-promise-rejection",
             message:
                 reason instanceof Error
@@ -517,16 +522,16 @@
         });
     });
 
-    function reportInitialData() {
-        reportPageView();
-        reportStaticData();
-        window.setTimeout(reportPerformanceData, 0);
+    function sendInitialData() {
+        sendPageView();
+        sendStaticData();
+        window.setTimeout(sendPerformanceData, 0);
     }
 
     if (document.readyState === "complete") {
-        reportInitialData();
+        sendInitialData();
     } else {
-        window.addEventListener("load", reportInitialData, {
+        window.addEventListener("load", sendInitialData, {
             once: true
         });
     }

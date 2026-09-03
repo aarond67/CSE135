@@ -13,30 +13,30 @@
     const numberFormatter = new Intl.NumberFormat("en-US");
     const metricIds = ["metric-page-loads", "metric-unique-sessions", "metric-average-load"];
     const sectionIds = ["technology-report", "behavior-report", "performance-report"];
-    let requestNumber = 0;
-    let activeRequest = null;
+    let latestRequestId = 0;
+    let requestController = null;
 
-    function element(tag, className, text) {
+    function createElement(tag, className, text) {
         const node = document.createElement(tag);
         node.className = className;
         if (text !== undefined) { node.textContent = text; }
         return node;
     }
 
-    function validNumber(value) {
+    function isValidNumber(value) {
         return typeof value === "number" && Number.isFinite(value) && value >= 0;
     }
 
     function formatNumber(value) {
-        return validNumber(value) ? numberFormatter.format(value) : "—";
+        return isValidNumber(value) ? numberFormatter.format(value) : "—";
     }
 
     function formatDuration(value) {
-        if (!validNumber(value)) { return "—"; }
+        if (!isValidNumber(value)) { return "—"; }
         return value >= 1000 ? (value / 1000).toFixed(2) + " s" : value.toFixed(1) + " ms";
     }
 
-    function pageLabel(pageUrl) {
+    function getPageLabel(pageUrl) {
         try {
             const parsed = new URL(pageUrl);
             return parsed.pathname + parsed.search;
@@ -55,9 +55,9 @@
         node.textContent = permitted ? formatter(value) : "—";
     }
 
-    function tableMessage(message) {
-        const row = element("tr", "");
-        const cell = element("td", "", message);
+    function showTableMessage(message) {
+        const row = createElement("tr", "");
+        const cell = createElement("td", "", message);
         cell.colSpan = 4;
         row.appendChild(cell);
         performanceTable.replaceChildren(row);
@@ -70,58 +70,58 @@
             node.closest(".metric-card").hidden = true;
         });
         sectionIds.forEach(function (id) { setVisible(id, false); });
-        pageChart.replaceChildren(element("p", "empty-state", message));
-        shoppingChart.replaceChildren(element("p", "empty-state", message));
-        tableMessage(message);
+        pageChart.replaceChildren(createElement("p", "empty-state", message));
+        shoppingChart.replaceChildren(createElement("p", "empty-state", message));
+        showTableMessage(message);
     }
 
-    function barRow(label, value, maximum, colorClass) {
-        const row = element("div", "chart-row");
-        const name = element("span", "chart-label", label);
-        const track = element("div", "chart-track");
-        const bar = element("div", "chart-bar " + colorClass);
-        // Zero stays zero: no minimum width that inflates small counts.
-        bar.style.width = ((validNumber(value) ? value : 0) / maximum * 100) + "%";
+    function createBarRow(label, value, maximum, colorClass) {
+        const row = createElement("div", "chart-row");
+        const name = createElement("span", "chart-label", label);
+        const track = createElement("div", "chart-track");
+        const bar = createElement("div", "chart-bar " + colorClass);
+        // A zero count should not draw a visible bar.
+        bar.style.width = ((isValidNumber(value) ? value : 0) / maximum * 100) + "%";
         track.setAttribute("aria-hidden", "true");
         track.appendChild(bar);
-        row.append(name, track, element("strong", "chart-value", formatNumber(value)));
+        row.append(name, track, createElement("strong", "chart-value", formatNumber(value)));
         return row;
     }
 
     function renderPageChart(rows) {
         pageChart.replaceChildren();
         if (rows.length === 0) {
-            pageChart.appendChild(element("p", "empty-state", "No page loads recorded in this period."));
+            pageChart.appendChild(createElement("p", "empty-state", "No page loads recorded in this period."));
             return;
         }
         const pages = rows.slice(0, 8);
         const maximum = Math.max(...pages.map(function (row) { return row.pageLoads; }), 1);
-        pageChart.appendChild(element("p", "overview-scale", "Page loads · scale 0–" + formatNumber(maximum)));
+        pageChart.appendChild(createElement("p", "overview-scale", "Page loads · scale 0–" + formatNumber(maximum)));
         pages.forEach(function (page) {
-            const row = barRow(pageLabel(page.pageUrl), page.pageLoads, maximum, "chart-bar-technology");
+            const row = createBarRow(getPageLabel(page.pageUrl), page.pageLoads, maximum, "chart-bar-technology");
             row.querySelector(".chart-label").title = page.pageUrl;
             pageChart.appendChild(row);
         });
     }
 
-    function renderShopping(progress) {
+    function renderShoppingProgress(progress) {
         shoppingChart.replaceChildren();
         const visited = progress.visitedSessions;
         const products = progress.productSessions;
         const checkout = progress.checkoutSessions;
         const demoSuccess = progress.demoSuccessSessions;
         if (visited === 0) {
-            shoppingChart.appendChild(element("p", "empty-state", "No shop sessions recorded in this period."));
+            shoppingChart.appendChild(createElement("p", "empty-state", "No shop sessions recorded in this period."));
             return;
         }
-        shoppingChart.appendChild(element("p", "overview-scale", "Sessions · shared scale 0–" + formatNumber(visited)));
+        shoppingChart.appendChild(createElement("p", "overview-scale", "Sessions · shared scale 0–" + formatNumber(visited)));
         [
             ["Visited site", visited],
             ["Viewed a product", products],
             ["Then reached checkout", checkout],
             ["Demo success shown", demoSuccess]
         ].forEach(function ([label, count]) {
-            shoppingChart.appendChild(barRow(label, count, visited, "chart-bar-behavior"));
+            shoppingChart.appendChild(createBarRow(label, count, visited, "chart-bar-behavior"));
         });
 
         const result = products > 0
@@ -129,61 +129,61 @@
                 " product-viewing sessions reached checkout afterward (" +
                 (checkout / products * 100).toFixed(1) + "%)."
             : "No product-page views were recorded, so checkout reach cannot be calculated.";
-        shoppingChart.appendChild(element("p", "overview-shopping-result", result));
+        shoppingChart.appendChild(createElement("p", "overview-shopping-result", result));
 
         if (checkout > 0) {
-            shoppingChart.appendChild(element("p", "overview-shopping-followup",
+            shoppingChart.appendChild(createElement("p", "overview-shopping-followup",
                 "Demo success was recorded afterward in " + formatNumber(demoSuccess) +
                 " qualifying " + (demoSuccess === 1 ? "session" : "sessions") +
                 ". No success record does not prove failure or abandonment."));
         }
     }
 
-    function renderPerformance(rows) {
+    function renderPerformanceTable(rows) {
         performanceTable.replaceChildren();
         if (rows.length === 0) {
-            tableMessage("No valid performance measurements recorded in this period.");
+            showTableMessage("No valid performance measurements recorded in this period.");
             return;
         }
         rows.slice(0, 10).forEach(function (page) {
-            const row = element("tr", "");
-            const name = element("th", "overview-page-cell", pageLabel(page.pageUrl));
+            const row = createElement("tr", "");
+            const name = createElement("th", "overview-page-cell", getPageLabel(page.pageUrl));
             name.setAttribute("scope", "row");
             name.title = page.pageUrl;
             row.append(name,
-                element("td", "overview-numeric", formatNumber(page.measurements)),
-                element("td", "overview-numeric", formatDuration(page.averageLoadTimeMs)),
-                element("td", "overview-numeric", formatDuration(page.slowestLoadTimeMs)));
+                createElement("td", "overview-numeric", formatNumber(page.measurements)),
+                createElement("td", "overview-numeric", formatDuration(page.averageLoadTimeMs)),
+                createElement("td", "overview-numeric", formatDuration(page.slowestLoadTimeMs)));
             performanceTable.appendChild(row);
         });
     }
 
-    function validPayload(payload) {
+    function isValidOverview(payload) {
         if (!payload || payload.success !== true || !payload.permissions || !payload.summary ||
             !payload.charts || !payload.tables || !payload.dateRange ||
             typeof payload.dateRange.start !== "string" || typeof payload.dateRange.end !== "string") {
             return false;
         }
-        const p = payload.permissions;
-        if (![p.technology, p.performance, p.behavior].every(function (value) { return typeof value === "boolean"; }) ||
-            ![p.technology, p.performance, p.behavior].some(Boolean)) {
+        const permissions = payload.permissions;
+        if (![permissions.technology, permissions.performance, permissions.behavior].every(function (value) { return typeof value === "boolean"; }) ||
+            ![permissions.technology, permissions.performance, permissions.behavior].some(Boolean)) {
             return false;
         }
-        if (p.technology && (!validNumber(payload.summary.pageLoads) || !validNumber(payload.summary.uniqueSessions) ||
+        if (permissions.technology && (!isValidNumber(payload.summary.pageLoads) || !isValidNumber(payload.summary.uniqueSessions) ||
             !Array.isArray(payload.charts.pageLoadsByPage) || !payload.charts.pageLoadsByPage.every(function (row) {
-                return row && typeof row.pageUrl === "string" && validNumber(row.pageLoads);
+                return row && typeof row.pageUrl === "string" && isValidNumber(row.pageLoads);
             }))) {
             return false;
         }
-        if (p.performance && ((payload.summary.averageLoadTimeMs !== null && !validNumber(payload.summary.averageLoadTimeMs)) ||
+        if (permissions.performance && ((payload.summary.averageLoadTimeMs !== null && !isValidNumber(payload.summary.averageLoadTimeMs)) ||
             !Array.isArray(payload.tables.pagePerformance) || !payload.tables.pagePerformance.every(function (row) {
-                return row && typeof row.pageUrl === "string" && validNumber(row.measurements) &&
-                    validNumber(row.averageLoadTimeMs) && validNumber(row.slowestLoadTimeMs);
+                return row && typeof row.pageUrl === "string" && isValidNumber(row.measurements) &&
+                    isValidNumber(row.averageLoadTimeMs) && isValidNumber(row.slowestLoadTimeMs);
             }))) {
             return false;
         }
         const progress = payload.charts.shoppingProgress;
-        return !p.behavior || (progress &&
+        return !permissions.behavior || (progress &&
             [progress.visitedSessions, progress.productSessions, progress.checkoutSessions,
                 progress.demoSuccessSessions].every(function (value) {
                 return Number.isSafeInteger(value) && value >= 0;
@@ -193,16 +193,16 @@
     }
 
     function renderDashboard(payload) {
-        const p = payload.permissions;
-        setVisible("technology-report", p.technology);
-        setVisible("behavior-report", p.behavior);
-        setVisible("performance-report", p.performance);
-        updateMetric("metric-page-loads", payload.summary.pageLoads, formatNumber, p.technology);
-        updateMetric("metric-unique-sessions", payload.summary.uniqueSessions, formatNumber, p.technology);
-        updateMetric("metric-average-load", payload.summary.averageLoadTimeMs, formatDuration, p.performance);
-        if (p.technology) { renderPageChart(payload.charts.pageLoadsByPage); }
-        if (p.behavior) { renderShopping(payload.charts.shoppingProgress); }
-        if (p.performance) { renderPerformance(payload.tables.pagePerformance); }
+        const permissions = payload.permissions;
+        setVisible("technology-report", permissions.technology);
+        setVisible("behavior-report", permissions.behavior);
+        setVisible("performance-report", permissions.performance);
+        updateMetric("metric-page-loads", payload.summary.pageLoads, formatNumber, permissions.technology);
+        updateMetric("metric-unique-sessions", payload.summary.uniqueSessions, formatNumber, permissions.technology);
+        updateMetric("metric-average-load", payload.summary.averageLoadTimeMs, formatDuration, permissions.performance);
+        if (permissions.technology) { renderPageChart(payload.charts.pageLoadsByPage); }
+        if (permissions.behavior) { renderShoppingProgress(payload.charts.shoppingProgress); }
+        if (permissions.performance) { renderPerformanceTable(payload.tables.pagePerformance); }
         startInput.value = payload.dateRange.start;
         endInput.value = payload.dateRange.end;
         statusMessage.className = "status-message status-success";
@@ -211,9 +211,10 @@
     }
 
     async function loadDashboard() {
-        const thisRequest = ++requestNumber;
-        if (activeRequest) { activeRequest.abort(); }
-        activeRequest = new AbortController();
+        // A slow response from an older filter must not replace newer results.
+        const requestId = ++latestRequestId;
+        if (requestController) { requestController.abort(); }
+        requestController = new AbortController();
         applyButton.disabled = true;
         resetButton.disabled = true;
         statusMessage.className = "status-message";
@@ -228,29 +229,29 @@
                 headers: { Accept: "application/json" },
                 credentials: "same-origin",
                 cache: "no-store",
-                signal: activeRequest.signal
+                signal: requestController.signal
             });
-            if (thisRequest !== requestNumber) { return; }
+            if (requestId !== latestRequestId) { return; }
             if (response.status === 401) {
                 window.location.replace("/login.php");
                 return;
             }
             const payload = await response.json().catch(function () { return {}; });
-            if (thisRequest !== requestNumber) { return; }
+            if (requestId !== latestRequestId) { return; }
             if (!response.ok) {
                 throw new Error(payload.error || "Unable to load analytics data.");
             }
-            if (!validPayload(payload)) {
+            if (!isValidOverview(payload)) {
                 throw new Error("The server returned an unexpected overview response. Please refresh after deployment finishes.");
             }
             renderDashboard(payload);
         } catch (error) {
-            if (thisRequest !== requestNumber || error.name === "AbortError") { return; }
+            if (requestId !== latestRequestId || error.name === "AbortError") { return; }
             clearDashboard("Dashboard data is unavailable.");
             statusMessage.className = "status-message status-error";
             statusMessage.textContent = error.message || "Unable to load analytics data.";
         } finally {
-            if (thisRequest === requestNumber) {
+            if (requestId === latestRequestId) {
                 applyButton.disabled = false;
                 resetButton.disabled = false;
                 pageChart.setAttribute("aria-busy", "false");

@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-/**
- * Return user information
- */
+// Check the account again so deleted or disabled users lose access.
 function currentUser(): ?array
 {
     $userId = $_SESSION['user']['id'] ?? null;
@@ -31,26 +29,24 @@ function currentUser(): ?array
         return null;
     }
 
-    $safeUser = [
+    $sessionUser = [
         'id' => (int) $user['id'],
         'username' => $user['username'],
         'email' => $user['email'],
         'role' => $user['role']
     ];
 
-    $_SESSION['user'] = $safeUser;
+    $_SESSION['user'] = $sessionUser;
 
-    return $safeUser;
+    return $sessionUser;
 }
 
-/**
- * Check a username or email and password.
- */
-function attemptLogin(string $identifier, string $password): bool
+// Allow either a username or email when signing in.
+function attemptLogin(string $loginName, string $password): bool
 {
-    $identifier = trim($identifier);
+    $loginName = trim($loginName);
 
-    if ($identifier === '' || $password === '') {
+    if ($loginName === '' || $password === '') {
         return false;
     }
 
@@ -63,8 +59,8 @@ function attemptLogin(string $identifier, string $password): bool
     );
 
     $statement->execute([
-        'username_identifier' => $identifier,
-        'email_identifier' => $identifier
+        'username_identifier' => $loginName,
+        'email_identifier' => $loginName
     ]);
 
     $user = $statement->fetch();
@@ -99,9 +95,7 @@ function attemptLogin(string $identifier, string $password): bool
     return true;
 }
 
-/**
- * Remove all login-session information.
- */
+// Clear both the server session and the browser's login cookie.
 function logoutUser(): void
 {
     $_SESSION = [];
@@ -122,9 +116,6 @@ function logoutUser(): void
     session_destroy();
 }
 
-/**
- * Require the visitor to be logged in.
- */
 function requireLogin(): array
 {
     $user = currentUser();
@@ -137,9 +128,7 @@ function requireLogin(): array
     return $user;
 }
 
-/**
- * Prevent logged-in users from returning to the login page.
- */
+// Already signed in? Go straight to the dashboard.
 function requireGuest(): void
 {
     if (currentUser() !== null) {
@@ -147,9 +136,6 @@ function requireGuest(): void
     }
 }
 
-/**
- * Require one of the provided roles.
- */
 function requireRole(array $allowedRoles): array
 {
     $user = requireLogin();
@@ -165,9 +151,7 @@ function requireRole(array $allowedRoles): array
     return $user;
 }
 
-/**
- * Check whether a user can access an analytics section.
- */
+// Super admins see every section; analysts only see their assigned sections.
 function userCanAccessSection(array $user, string $section): bool
 {
     if ($user['role'] === 'super_admin') {
@@ -194,9 +178,6 @@ function userCanAccessSection(array $user, string $section): bool
     return (bool) $statement->fetchColumn();
 }
 
-/**
- * Require permission for one analytics section.
- */
 function requireSectionAccess(string $section): array
 {
     $allowedSections = [

@@ -5,7 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
 $currentUser = requireRole(['super_admin']);
-$messages = consumeFlashMessages();
+$messages = getFlashMessages();
 $errors = [];
 
 $createValues = [
@@ -24,13 +24,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         if ($action === 'create') {
             [$data, $validationErrors] =
-                validateDashboardUserInput($_POST, true);
+                validateUserInput($_POST, true);
 
             $createValues = $data;
             $errors = $validationErrors;
 
             if ($errors === []) {
-                createDashboardUser($data);
+                createUser($data);
 
                 setFlashMessage(
                     'success',
@@ -52,12 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             [$data, $validationErrors] =
-                validateDashboardUserInput($_POST, false);
+                validateUserInput($_POST, false);
 
             $errors = $validationErrors;
 
             if ($errors === []) {
-                updateDashboardUser(
+                updateUser(
                     (int) $userId,
                     $currentUser['id'],
                     $data
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
             }
 
-            deleteDashboardUser(
+            deleteUser(
                 (int) $userId,
                 $currentUser['id']
             );
@@ -126,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$users = listDashboardUsers();
+$users = listUsers();
 $roles = allowedUserRoles();
 $sections = allowedAnalyticsSections();
 
@@ -179,7 +179,7 @@ function displayRole(string $role): string
 
         <?php if ($errors !== []): ?>
             <div class="alert alert-error">
-                <strong>The following problems need to be fixed:</strong>
+                <strong>Please fix these before saving:</strong>
 
                 <ul>
                     <?php foreach ($errors as $error): ?>
@@ -384,10 +384,7 @@ function displayRole(string $role): string
 
                                         <form
                                             method="post"
-                                            class="delete-user-form"
-                                            onsubmit="return confirm(
-                                                'Are you sure you want to permanently delete this account?'
-                                            );"
+                                            class="edit-user-form"
                                         >
                                             <?= csrfInput() ?>
 
@@ -563,6 +560,7 @@ function displayRole(string $role): string
                                             <form
                                                 method="post"
                                                 class="delete-user-form"
+                                                onsubmit="return confirm('Permanently delete this account?');"
                                             >
                                                 <?= csrfInput() ?>
 

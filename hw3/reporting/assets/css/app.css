@@ -1,4 +1,4 @@
-/* Compact overview only; detailed reports and account screens keep their layout. */
+/* Dashboard spacing. These rules leave the other pages alone. */
 .overview-dashboard .dashboard-content {
     margin: 1.25rem auto;
 }
@@ -166,6 +166,7 @@
     }
 }
 
+/* Shared colors, forms, and page layout. */
 :root {
     color-scheme: light;
     font-family:
@@ -339,6 +340,7 @@ a.button {
     text-decoration: none;
 }
 
+/* Account management. */
 .management-form {
     display: grid;
     gap: 1.25rem;
@@ -465,6 +467,7 @@ a.button {
     display: none !important;
 }
 
+/* Dashboard cards, filters, and bar charts. */
 .dashboard-heading {
     display: flex;
     align-items: end;
@@ -668,6 +671,7 @@ a.button {
     }
 }
 
+/* Performance report and analyst comments. */
 .performance-summary-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }
@@ -771,7 +775,7 @@ a.button {
     }
 }
 
-/* Performance report: switchable charts. Scoped to leave other pages alone. */
+/* Individual-load dots and the loading-stage chart. */
 .performance-chart-heading {
     display: flex;
     align-items: center;

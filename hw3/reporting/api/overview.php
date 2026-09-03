@@ -36,7 +36,7 @@ if (!in_array(true, $permissions, true)) {
 
 $dateRange = getApiDateRange();
 
-$queryParameters = [
+$dateParams = [
     'start' => $dateRange['sql_start'],
     'end' => $dateRange['sql_end_exclusive']
 ];
@@ -59,9 +59,7 @@ $response = [
 try {
     $pdo = database();
 
-    /*
-     * Technology section
-     */
+    // Page loads and sessions for the traffic cards and chart.
     if ($permissions['technology']) {
         $summaryStatement = $pdo->prepare(
             'SELECT
@@ -72,7 +70,7 @@ try {
                AND collected_at < :end'
         );
 
-        $summaryStatement->execute($queryParameters);
+        $summaryStatement->execute($dateParams);
 
         $technologySummary =
             $summaryStatement->fetch() ?: [];
@@ -95,7 +93,7 @@ try {
              LIMIT 8'
         );
 
-        $pageStatement->execute($queryParameters);
+        $pageStatement->execute($dateParams);
 
         $pageRows = $pageStatement->fetchAll();
 
@@ -113,9 +111,7 @@ try {
             $topPages;
     }
 
-    /*
-     * Performance section
-     */
+    // Average speed for the card, plus the slowest pages for the grid.
     if ($permissions['performance']) {
         $performanceStatement = $pdo->prepare(
             'SELECT
@@ -129,7 +125,7 @@ try {
         );
 
         $performanceStatement->execute(
-            $queryParameters
+            $dateParams
         );
 
         $performanceSummary =
@@ -159,7 +155,7 @@ try {
         );
 
         $performancePageStatement->execute(
-            $queryParameters
+            $dateParams
         );
 
         $performanceRows =
@@ -181,16 +177,13 @@ try {
             );
     }
 
-    /*
-     * Behavior section
-     */
+    // Follow each session from a product page to checkout and demo success.
     if ($permissions['behavior']) {
-        /*
-         * All steps must be in the selected dates and in the same session.
-         * Earliest product -> earliest later checkout -> any later demo success.
-         * Each joined CTE has one row per session, so repeats cannot inflate
-         * counts. Equal timestamps do not establish an order.
-         */
+        // All steps must happen in the same session and selected dates.
+        // Use the first product view, then the first checkout after it.
+        // A later checkout reload must not erase an earlier demo success.
+        // Each subquery returns one row per session to avoid double-counting.
+        // Matching timestamps are not enough to prove which step came first.
         $shoppingStatement = $pdo->prepare(
             "WITH shop_visits AS (
                 SELECT
