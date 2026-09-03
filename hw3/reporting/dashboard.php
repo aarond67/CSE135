@@ -33,8 +33,8 @@ $defaultStart = $today
         content="width=device-width, initial-scale=1.0"
     >
     <title>Dashboard | Bad Decisions Analytics</title>
-    <link rel="stylesheet" href="/assets/css/app.css?v=shopping-1">
-    <script src="/assets/js/dashboard.js?v=demo-success-1" defer></script>
+    <link rel="stylesheet" href="/assets/css/app.css?v=shopping-funnel-1">
+    <script src="/assets/js/dashboard.js?v=shopping-funnel-1" defer></script>
 </head>
 <body class="overview-dashboard">
     <header class="topbar">
@@ -234,6 +234,7 @@ $defaultStart = $today
                 <div
                     id="shopping-chart"
                     class="overview-shopping-chart"
+                    role="region"
                     aria-labelledby="shopping-title"
                     aria-describedby="shopping-note shopping-limits"
                     aria-busy="true"

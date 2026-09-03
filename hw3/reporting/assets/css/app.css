@@ -106,6 +106,60 @@
     font-variant-numeric: tabular-nums;
 }
 
+.shopping-funnel {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.funnel-step {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.6fr) minmax(2rem, auto);
+    column-gap: 0.65rem;
+    align-items: center;
+}
+
+.funnel-label {
+    padding: 0.35rem 0;
+    font-size: 0.875rem;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.funnel-track {
+    display: flex;
+    justify-content: center;
+    align-self: stretch;
+    min-width: 0;
+    min-height: 2.5rem;
+}
+
+.funnel-band {
+    flex: none;
+    min-width: 0;
+    background: #0f766e;
+}
+
+.funnel-count {
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.funnel-connector {
+    grid-column: 2;
+    height: 1.15rem;
+    background: #99d6cf;
+}
+
+@media (forced-colors: active) {
+    .funnel-band,
+    .funnel-connector {
+        background: CanvasText;
+        forced-color-adjust: none;
+    }
+}
+
 .overview-shopping-result {
     margin: 0.4rem 0 0;
     padding: 0.75rem;

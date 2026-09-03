@@ -114,15 +114,50 @@
             shoppingChart.appendChild(createElement("p", "empty-state", "No shop sessions recorded in this period."));
             return;
         }
-        shoppingChart.appendChild(createElement("p", "overview-scale", "Sessions · shared scale 0–" + formatNumber(visited)));
-        [
+        shoppingChart.appendChild(createElement("p", "overview-scale",
+            "Funnel width = sessions at each step. Widest step: " + formatNumber(visited) + "."));
+        const steps = [
             ["Visited site", visited],
             ["Viewed a product", products],
             ["Then reached checkout", checkout],
             ["Demo success shown", demoSuccess]
-        ].forEach(function ([label, count]) {
-            shoppingChart.appendChild(createBarRow(label, count, visited, "chart-bar-behavior"));
+        ];
+        const funnel = createElement("ol", "shopping-funnel");
+        funnel.setAttribute("role", "list");
+        funnel.setAttribute("aria-label", "Shopping funnel, sessions at each step");
+
+        steps.forEach(function ([label, count], index) {
+            const step = createElement("li", "funnel-step");
+            const track = createElement("div", "funnel-track");
+            const band = createElement("div", "funnel-band");
+            const width = count / visited * 100;
+
+            // Keep counts proportional, including zero. Labels sit outside the shape.
+            band.style.width = width + "%";
+            track.setAttribute("aria-hidden", "true");
+            track.appendChild(band);
+            step.append(
+                createElement("span", "funnel-label", label),
+                track,
+                createElement("strong", "funnel-count", formatNumber(count))
+            );
+
+            if (index < steps.length - 1) {
+                const nextWidth = steps[index + 1][1] / visited * 100;
+                const left = (100 - width) / 2;
+                const nextLeft = (100 - nextWidth) / 2;
+                const connector = createElement("div", "funnel-connector");
+
+                // The pale connector joins two stage widths; it is not another count.
+                connector.style.clipPath = "polygon(" + left + "% 0, " +
+                    (100 - left) + "% 0, " + (100 - nextLeft) + "% 100%, " +
+                    nextLeft + "% 100%)";
+                connector.setAttribute("aria-hidden", "true");
+                step.appendChild(connector);
+            }
+            funnel.appendChild(step);
         });
+        shoppingChart.appendChild(funnel);
 
         const result = products > 0
             ? formatNumber(checkout) + " of " + formatNumber(products) +
