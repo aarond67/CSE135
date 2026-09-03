@@ -1,3 +1,168 @@
+/* Compact overview only; detailed reports and account screens keep their layout. */
+.overview-dashboard .dashboard-content {
+    margin: 1.25rem auto;
+}
+
+.overview-dashboard .dashboard-heading {
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.overview-dashboard .dashboard-heading h1 {
+    font-size: 1.85rem;
+}
+
+.overview-dashboard .dashboard-heading .muted {
+    margin-top: 0.4rem;
+}
+
+.overview-report-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.overview-report-nav > span {
+    color: #475569;
+    font-weight: 700;
+}
+
+.overview-report-nav a {
+    color: #1d4ed8;
+    text-underline-offset: 0.2em;
+}
+
+.overview-dashboard .date-filter {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.75rem;
+}
+
+.overview-dashboard .date-filter label,
+.overview-dashboard .metric-label {
+    font-size: 0.875rem;
+}
+
+.overview-dashboard .summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    margin: 1rem 0;
+}
+
+.overview-dashboard .report-grid {
+    align-items: start;
+}
+
+.overview-dashboard .panel {
+    padding: 1.25rem;
+}
+
+.overview-dashboard .panel h2 {
+    font-size: 1.25rem;
+}
+
+.overview-dashboard .panel > .muted {
+    margin: 0.5rem 0 1rem;
+}
+
+.overview-dashboard .horizontal-chart,
+.overview-interaction-chart {
+    display: grid;
+    gap: 0.8rem;
+    margin-top: 1rem;
+}
+
+.overview-scale {
+    margin: 0 0 0.15rem;
+    color: #475569;
+    font-size: 0.875rem;
+}
+
+.overview-dashboard .chart-row {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 2fr) minmax(2.5rem, auto);
+    gap: 0.6rem;
+}
+
+.overview-dashboard .chart-row .chart-track {
+    grid-column: auto;
+    grid-row: auto;
+}
+
+.overview-dashboard .chart-label {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.overview-dashboard .chart-bar {
+    min-width: 0;
+}
+
+.overview-dashboard .chart-value {
+    min-width: 0;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.overview-interaction-group {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.overview-page-label {
+    margin: 0 0 0.1rem;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.overview-dashboard .overview-interaction-group .chart-row {
+    grid-template-columns: 3.5rem minmax(0, 1fr) minmax(2.5rem, auto);
+}
+
+.overview-bar-clicks {
+    background: #7c3aed;
+}
+
+.overview-table-caption {
+    padding: 0 0 0.75rem;
+    color: #475569;
+    text-align: left;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.overview-dashboard .data-table .overview-page-cell {
+    color: inherit;
+    background: transparent;
+    font-size: 1rem;
+    letter-spacing: normal;
+    text-transform: none;
+    overflow-wrap: anywhere;
+    min-width: 11rem;
+}
+
+.overview-dashboard .data-table .overview-numeric,
+.overview-dashboard .data-table thead th:not(:first-child) {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.overview-dashboard a:focus-visible,
+.overview-dashboard button:focus-visible,
+.overview-dashboard .table-wrapper:focus-visible {
+    outline: 3px solid #2563eb;
+    outline-offset: 3px;
+}
+
+@media (max-width: 60rem) {
+    .overview-dashboard .dashboard-heading {
+        align-items: stretch;
+    }
+}
+
 :root {
     color-scheme: light;
     font-family:

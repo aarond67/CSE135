@@ -10,6 +10,7 @@ $user = requireRole([
 ]);
 
 $messages = consumeFlashMessages();
+$canViewPerformance = userCanAccessSection($user, 'performance');
 
 $roleName = ucwords(
     str_replace('_', ' ', $user['role'])
@@ -32,10 +33,10 @@ $defaultStart = $today
         content="width=device-width, initial-scale=1.0"
     >
     <title>Dashboard | Bad Decisions Analytics</title>
-    <link rel="stylesheet" href="/assets/css/app.css">
-    <script src="/assets/js/dashboard.js" defer></script>
+    <link rel="stylesheet" href="/assets/css/app.css?v=overview-2">
+    <script src="/assets/js/dashboard.js?v=overview-2" defer></script>
 </head>
-<body>
+<body class="overview-dashboard">
     <header class="topbar">
         <div>
             <p class="eyebrow">Bad Decisions Analytics</p>
@@ -93,10 +94,17 @@ $defaultStart = $today
                 <h1>Website activity</h1>
 
                 <p class="muted">
-                    See how people are accessing the website, how quickly
-                    pages are loading, and how visitors are interacting
-                    with each page.
+                    Traffic, interactions, and page speed at a glance.
                 </p>
+
+                <?php if ($canViewPerformance): ?>
+                    <nav class="overview-report-nav" aria-label="Detailed reports">
+                        <span>Reports</span>
+                        <a href="/reports/performance.php" id="performance-report-link">
+                            Performance report &rarr;
+                        </a>
+                    </nav>
+                <?php endif; ?>
             </div>
 
             <form
@@ -169,40 +177,22 @@ $defaultStart = $today
             class="summary-grid"
             aria-label="Analytics summary"
         >
-            <article class="metric-card">
+            <article class="metric-card" hidden>
                 <span class="metric-label">Page loads</span>
                 <strong id="metric-page-loads">—</strong>
-                <small>Pages collected</small>
+                <small>Recorded static-data entries</small>
             </article>
 
-            <article class="metric-card">
+            <article class="metric-card" hidden>
                 <span class="metric-label">Unique sessions</span>
                 <strong id="metric-unique-sessions">—</strong>
-                <small>Separate browsing sessions</small>
+                <small>Session IDs in those page loads</small>
             </article>
 
-            <article class="metric-card">
+            <article class="metric-card" hidden>
                 <span class="metric-label">Average load time</span>
                 <strong id="metric-average-load">—</strong>
-                <small>Across performance records</small>
-            </article>
-
-            <article class="metric-card">
-                <span class="metric-label">Fastest load</span>
-                <strong id="metric-fastest-load">—</strong>
-                <small>Fastest page measurement</small>
-            </article>
-
-            <article class="metric-card">
-                <span class="metric-label">Slowest load</span>
-                <strong id="metric-slowest-load">—</strong>
-                <small>Slowest page measurement</small>
-            </article>
-
-            <article class="metric-card">
-                <span class="metric-label">Activity events</span>
-                <strong id="metric-activity-events">—</strong>
-                <small>Recorded visitor interactions</small>
+                <small>Across valid performance measurements</small>
             </article>
         </section>
 
@@ -210,89 +200,79 @@ $defaultStart = $today
             <section
                 id="technology-report"
                 class="panel report-panel"
+                hidden
             >
-                <p class="eyebrow">Technology</p>
-                <h2>Page loads by page</h2>
+                <p class="eyebrow">Traffic</p>
+                <h2 id="page-load-title">Most visited pages</h2>
 
-                <p class="muted">
-                    This shows which pages were loaded most often during
-                    the selected period.
+                <p class="muted" id="page-load-note">
+                    Up to 8 URLs ranked by recorded page loads, including repeat visits.
                 </p>
 
                 <div
                     id="page-load-chart"
                     class="horizontal-chart"
+                    aria-labelledby="page-load-title"
+                    aria-describedby="page-load-note"
+                    aria-busy="true"
                 ></div>
-            </section>
-
-            <section
-                id="performance-report"
-                class="panel report-panel"
-            >
-                <p class="eyebrow">Performance</p>
-                <h2>Average load time by page</h2>
-
-                <p class="muted">
-                    Longer bars represent pages that took more time to
-                    finish loading.
-                </p>
-
-                <div
-                    id="performance-chart"
-                    class="horizontal-chart"
-                ></div>
-                <a
-                    href="/reports/performance.php"
-                    class="button button-secondary report-link"
-                >
-                    View detailed performance report
-                </a>
             </section>
 
             <section
                 id="behavior-report"
                 class="panel report-panel"
+                hidden
             >
                 <p class="eyebrow">Behavior</p>
-                <h2>Activity by event type</h2>
+                <h2 id="activity-title">Interactions by page</h2>
 
-                <p class="muted">
-                    This compares mouse, keyboard, scrolling, idle, and
-                    page activity.
+                <p class="muted" id="activity-note">
+                    Up to 8 URLs ranked by clicks + scroll events. These are
+                    recorded events, not unique people or a measure of satisfaction.
                 </p>
 
                 <div
                     id="activity-chart"
-                    class="horizontal-chart"
+                    class="overview-interaction-chart"
+                    aria-labelledby="activity-title"
+                    aria-describedby="activity-note"
+                    aria-busy="true"
                 ></div>
             </section>
         </div>
 
         <section
-            id="top-pages-report"
+            id="performance-report"
             class="panel data-panel"
+            hidden
         >
-            <p class="eyebrow">Page data</p>
-            <h2>Top pages</h2>
+            <p class="eyebrow">Performance</p>
+            <h2>Pages to investigate</h2>
 
             <p class="muted">
-                Page-load and session totals for each collected URL.
+                Up to 10 URLs with the highest average load time. A high average
+                with few measurements is a reason to investigate, not proof of a persistent problem.
             </p>
 
-            <div class="table-wrapper">
+            <div class="table-wrapper" tabindex="0" role="region" aria-label="Page performance; scroll horizontally if needed">
                 <table class="data-table">
+                    <caption class="overview-table-caption">
+                        Each row summarizes valid performance measurements in the selected UTC dates.
+                        Summary cards cover the full date range. Different URL paths and query strings remain separate.
+                    </caption>
                     <thead>
                         <tr>
                             <th scope="col">Page</th>
-                            <th scope="col">Page loads</th>
-                            <th scope="col">Unique sessions</th>
+                            <th scope="col">Measurements</th>
+                            <th scope="col">Average load</th>
+                            <th scope="col">Slowest load</th>
                         </tr>
                     </thead>
 
-                    <tbody id="top-pages-table">
+                    <tbody id="page-performance-table">
                         <tr>
-                            <td colspan="3">
-                                Loading page data...
+                            <td colspan="4">
+                                Loading performance summary...
                             </td>
                         </tr>
                     </tbody>

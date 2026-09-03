@@ -3,10 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Return safe user information for the current session.
- *
- * The database is checked on every request so disabled or deleted users
- * immediately lose access.
+ * Return user information
  */
 function currentUser(): ?array
 {
