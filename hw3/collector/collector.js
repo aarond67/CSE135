@@ -137,6 +137,26 @@
         send(payload);
     }
 
+    // The checkout demo emits this only after showing "Order Placed!".
+    // Ignore event details: no form values or payment data are collected here.
+    let demoSuccessReported = false;
+
+    window.addEventListener("cse135:demo-order-success", function () {
+        if (
+            demoSuccessReported ||
+            window.location.origin !== "https://test.baddecisions.site" ||
+            window.location.pathname !== "/checkout.html"
+        ) {
+            return;
+        }
+
+        // Its duplicated submit handler can show success more than once.
+        // Send at most once per page load; reporting also deduplicates sessions.
+        demoSuccessReported = true;
+        queueActivity("demo-order-success", { demo: true });
+        sendActivityBatch();
+    });
+
     window.addEventListener("mousemove", function (event) {
         const currentTime = Date.now();
 

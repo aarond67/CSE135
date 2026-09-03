@@ -34,7 +34,7 @@ $defaultStart = $today
     >
     <title>Dashboard | Bad Decisions Analytics</title>
     <link rel="stylesheet" href="/assets/css/app.css?v=shopping-1">
-    <script src="/assets/js/dashboard.js?v=shopping-1" defer></script>
+    <script src="/assets/js/dashboard.js?v=demo-success-1" defer></script>
 </head>
 <body class="overview-dashboard">
     <header class="topbar">
@@ -227,7 +227,7 @@ $defaultStart = $today
                 <h2 id="shopping-title">Shopping progress</h2>
 
                 <p class="muted" id="shopping-note">
-                    Are sessions reaching a product page and then checkout?
+                    Are sessions reaching checkout and seeing the demo success message?
                     Each session counts once per step in the selected dates.
                 </p>
 
@@ -240,9 +240,10 @@ $defaultStart = $today
                 ></div>
 
                 <p class="muted overview-shopping-limits" id="shopping-limits">
-                    Checkout must follow a product-page load in the same session.
-                    This measures checkout reach, not purchases. Missing records
-                    or visits outside the date range can leave steps uncounted.
+                    Product view, checkout, and demo success must occur in that order.
+                    Success is a randomized demo message, not a verified purchase.
+                    Older visits have no success tracking; missing records or steps
+                    outside the date range also leave stages uncounted.
                 </p>
             </section>
         </div>

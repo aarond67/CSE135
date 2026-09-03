@@ -109,6 +109,7 @@
         const visited = progress.visitedSessions;
         const products = progress.productSessions;
         const checkout = progress.checkoutSessions;
+        const demoSuccess = progress.demoSuccessSessions;
         if (visited === 0) {
             shoppingChart.appendChild(element("p", "empty-state", "No shop sessions recorded in this period."));
             return;
@@ -117,7 +118,8 @@
         [
             ["Visited site", visited],
             ["Viewed a product", products],
-            ["Then reached checkout", checkout]
+            ["Then reached checkout", checkout],
+            ["Demo success shown", demoSuccess]
         ].forEach(function ([label, count]) {
             shoppingChart.appendChild(barRow(label, count, visited, "chart-bar-behavior"));
         });
@@ -129,12 +131,11 @@
             : "No product-page views were recorded, so checkout reach cannot be calculated.";
         shoppingChart.appendChild(element("p", "overview-shopping-result", result));
 
-        if (products > 0) {
-            const remaining = products - checkout;
+        if (checkout > 0) {
             shoppingChart.appendChild(element("p", "overview-shopping-followup",
-                formatNumber(remaining) + " product-viewing " + (remaining === 1 ? "session" : "sessions") +
-                " had no later checkout recorded. " +
-                "Use this as a starting point to review the path to checkout, not proof of abandonment."));
+                "Demo success was recorded afterward in " + formatNumber(demoSuccess) +
+                " qualifying " + (demoSuccess === 1 ? "session" : "sessions") +
+                ". No success record does not prove failure or abandonment."));
         }
     }
 
@@ -183,9 +184,11 @@
         }
         const progress = payload.charts.shoppingProgress;
         return !p.behavior || (progress &&
-            [progress.visitedSessions, progress.productSessions, progress.checkoutSessions].every(function (value) {
+            [progress.visitedSessions, progress.productSessions, progress.checkoutSessions,
+                progress.demoSuccessSessions].every(function (value) {
                 return Number.isSafeInteger(value) && value >= 0;
-            }) && progress.checkoutSessions <= progress.productSessions &&
+            }) && progress.demoSuccessSessions <= progress.checkoutSessions &&
+            progress.checkoutSessions <= progress.productSessions &&
             progress.productSessions <= progress.visitedSessions);
     }
 

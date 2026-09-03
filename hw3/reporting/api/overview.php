@@ -186,48 +186,86 @@ try {
      */
     if ($permissions['behavior']) {
         /*
-         * One row per observed shop session, not per click or page load.
-         * An earliest product view followed by any later checkout qualifies.
-         * Both steps must be inside the selected dates; equal times do not
-         * establish an order. Query strings and fragments keep the same step.
+         * All steps must be in the selected dates and in the same session.
+         * Earliest product -> earliest later checkout -> any later demo success.
+         * Each joined CTE has one row per session, so repeats cannot inflate
+         * counts. Equal timestamps do not establish an order.
          */
         $shoppingStatement = $pdo->prepare(
-            "WITH session_progress AS (
+            "WITH shop_visits AS (
                 SELECT
                     session_id,
-                    MIN(CASE WHEN
+                    collected_at,
+                    CASE WHEN
                         page_url = 'https://test.baddecisions.site/product-detail.html'
                         OR page_url LIKE 'https://test.baddecisions.site/product-detail.html?%'
                         OR page_url LIKE 'https://test.baddecisions.site/product-detail.html#%'
-                        THEN collected_at END) AS first_product_at,
-                    MAX(CASE WHEN
+                        THEN 'product'
+                    WHEN
                         page_url = 'https://test.baddecisions.site/checkout.html'
                         OR page_url LIKE 'https://test.baddecisions.site/checkout.html?%'
                         OR page_url LIKE 'https://test.baddecisions.site/checkout.html#%'
-                        THEN collected_at END) AS last_checkout_at
+                        THEN 'checkout'
+                    ELSE 'visit' END AS step
                 FROM static_data
                 WHERE collected_at >= :start
                   AND collected_at < :end
                   AND page_url LIKE 'https://test.baddecisions.site/%'
+             ), session_progress AS (
+                SELECT
+                    session_id,
+                    MIN(CASE WHEN step = 'product' THEN collected_at END)
+                        AS first_product_at
+                FROM shop_visits
+                GROUP BY session_id
+             ), checkout_progress AS (
+                SELECT
+                    s.session_id,
+                    MIN(v.collected_at) AS first_checkout_at
+                FROM session_progress s
+                JOIN shop_visits v ON v.session_id = s.session_id
+                    AND v.step = 'checkout'
+                    AND v.collected_at > s.first_product_at
+                GROUP BY s.session_id
+             ), demo_successes AS (
+                SELECT session_id, MAX(event_time) AS last_demo_success_at
+                FROM activity_events
+                WHERE event_type = 'demo-order-success'
+                  AND event_time >= :success_start
+                  AND event_time < :success_end
+                  AND (
+                    page_url = 'https://test.baddecisions.site/checkout.html'
+                    OR page_url LIKE 'https://test.baddecisions.site/checkout.html?%'
+                    OR page_url LIKE 'https://test.baddecisions.site/checkout.html#%'
+                  )
                 GROUP BY session_id
              )
              SELECT
                 COUNT(*) AS visited_sessions,
-                COUNT(first_product_at) AS product_sessions,
+                COUNT(s.first_product_at) AS product_sessions,
+                COUNT(c.first_checkout_at) AS checkout_sessions,
                 COALESCE(SUM(CASE
-                    WHEN last_checkout_at > first_product_at THEN 1
-                    ELSE 0 END), 0) AS checkout_sessions
-             FROM session_progress"
+                    WHEN d.last_demo_success_at > c.first_checkout_at THEN 1
+                    ELSE 0 END), 0) AS demo_success_sessions
+             FROM session_progress s
+             LEFT JOIN checkout_progress c ON c.session_id = s.session_id
+             LEFT JOIN demo_successes d ON d.session_id = s.session_id"
         );
 
-        $shoppingStatement->execute($queryParameters);
+        $shoppingStatement->execute([
+            'start' => $dateRange['sql_start'],
+            'end' => $dateRange['sql_end_exclusive'],
+            'success_start' => $dateRange['sql_start'],
+            'success_end' => $dateRange['sql_end_exclusive']
+        ]);
 
         $shopping = $shoppingStatement->fetch() ?: [];
 
         $response['charts']['shoppingProgress'] = [
             'visitedSessions' => (int) ($shopping['visited_sessions'] ?? 0),
             'productSessions' => (int) ($shopping['product_sessions'] ?? 0),
-            'checkoutSessions' => (int) ($shopping['checkout_sessions'] ?? 0)
+            'checkoutSessions' => (int) ($shopping['checkout_sessions'] ?? 0),
+            'demoSuccessSessions' => (int) ($shopping['demo_success_sessions'] ?? 0)
         ];
     }
 
