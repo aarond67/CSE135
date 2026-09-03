@@ -69,7 +69,7 @@
 }
 
 .overview-dashboard .horizontal-chart,
-.overview-interaction-chart {
+.overview-shopping-chart {
     display: grid;
     gap: 0.8rem;
     margin-top: 1rem;
@@ -106,23 +106,26 @@
     font-variant-numeric: tabular-nums;
 }
 
-.overview-interaction-group {
-    display: grid;
-    gap: 0.35rem;
+.overview-shopping-result {
+    margin: 0.4rem 0 0;
+    padding: 0.75rem;
+    color: #115e59;
+    background: #f0fdfa;
+    border-left: 3px solid #0f766e;
+    line-height: 1.5;
+    font-weight: 650;
 }
 
-.overview-page-label {
-    margin: 0 0 0.1rem;
-    font-size: 0.9rem;
-    overflow-wrap: anywhere;
+.overview-shopping-followup,
+.overview-dashboard .panel > .overview-shopping-limits {
+    margin: 0;
+    color: #475569;
+    font-size: 0.875rem;
+    line-height: 1.5;
 }
 
-.overview-dashboard .overview-interaction-group .chart-row {
-    grid-template-columns: 3.5rem minmax(0, 1fr) minmax(2.5rem, auto);
-}
-
-.overview-bar-clicks {
-    background: #7c3aed;
+.overview-dashboard .panel > .overview-shopping-limits {
+    margin-top: 1rem;
 }
 
 .overview-table-caption {

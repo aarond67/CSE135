@@ -33,8 +33,8 @@ $defaultStart = $today
         content="width=device-width, initial-scale=1.0"
     >
     <title>Dashboard | Bad Decisions Analytics</title>
-    <link rel="stylesheet" href="/assets/css/app.css?v=overview-2">
-    <script src="/assets/js/dashboard.js?v=overview-2" defer></script>
+    <link rel="stylesheet" href="/assets/css/app.css?v=shopping-1">
+    <script src="/assets/js/dashboard.js?v=shopping-1" defer></script>
 </head>
 <body class="overview-dashboard">
     <header class="topbar">
@@ -94,7 +94,7 @@ $defaultStart = $today
                 <h1>Website activity</h1>
 
                 <p class="muted">
-                    Traffic, interactions, and page speed at a glance.
+                    Traffic, shopping progress, and page speed at a glance.
                 </p>
 
                 <?php if ($canViewPerformance): ?>
@@ -224,20 +224,26 @@ $defaultStart = $today
                 hidden
             >
                 <p class="eyebrow">Behavior</p>
-                <h2 id="activity-title">Interactions by page</h2>
+                <h2 id="shopping-title">Shopping progress</h2>
 
-                <p class="muted" id="activity-note">
-                    Up to 8 URLs ranked by clicks + scroll events. These are
-                    recorded events, not unique people or a measure of satisfaction.
+                <p class="muted" id="shopping-note">
+                    Are sessions reaching a product page and then checkout?
+                    Each session counts once per step in the selected dates.
                 </p>
 
                 <div
-                    id="activity-chart"
-                    class="overview-interaction-chart"
-                    aria-labelledby="activity-title"
-                    aria-describedby="activity-note"
+                    id="shopping-chart"
+                    class="overview-shopping-chart"
+                    aria-labelledby="shopping-title"
+                    aria-describedby="shopping-note shopping-limits"
                     aria-busy="true"
                 ></div>
+
+                <p class="muted overview-shopping-limits" id="shopping-limits">
+                    Checkout must follow a product-page load in the same session.
+                    This measures checkout reach, not purchases. Missing records
+                    or visits outside the date range can leave steps uncounted.
+                </p>
             </section>
         </div>
 

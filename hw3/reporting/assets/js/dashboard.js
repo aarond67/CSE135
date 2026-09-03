@@ -8,7 +8,7 @@
     const resetButton = document.getElementById("reset-filter");
     const statusMessage = document.getElementById("dashboard-status");
     const pageChart = document.getElementById("page-load-chart");
-    const activityChart = document.getElementById("activity-chart");
+    const shoppingChart = document.getElementById("shopping-chart");
     const performanceTable = document.getElementById("page-performance-table");
     const numberFormatter = new Intl.NumberFormat("en-US");
     const metricIds = ["metric-page-loads", "metric-unique-sessions", "metric-average-load"];
@@ -71,7 +71,7 @@
         });
         sectionIds.forEach(function (id) { setVisible(id, false); });
         pageChart.replaceChildren(element("p", "empty-state", message));
-        activityChart.replaceChildren(element("p", "empty-state", message));
+        shoppingChart.replaceChildren(element("p", "empty-state", message));
         tableMessage(message);
     }
 
@@ -104,24 +104,38 @@
         });
     }
 
-    function renderInteractions(rows) {
-        activityChart.replaceChildren();
-        if (rows.length === 0) {
-            activityChart.appendChild(element("p", "empty-state", "No click or scroll events recorded in this period."));
+    function renderShopping(progress) {
+        shoppingChart.replaceChildren();
+        const visited = progress.visitedSessions;
+        const products = progress.productSessions;
+        const checkout = progress.checkoutSessions;
+        if (visited === 0) {
+            shoppingChart.appendChild(element("p", "empty-state", "No shop sessions recorded in this period."));
             return;
         }
-        const pages = rows.slice(0, 8);
-        const maximum = Math.max(...pages.flatMap(function (row) { return [row.clicks, row.scrolls]; }), 1);
-        activityChart.appendChild(element("p", "overview-scale", "Events · shared scale 0–" + formatNumber(maximum)));
-        pages.forEach(function (page) {
-            const group = element("div", "overview-interaction-group");
-            const heading = element("h3", "overview-page-label", pageLabel(page.pageUrl));
-            heading.title = page.pageUrl;
-            group.append(heading,
-                barRow("Clicks", page.clicks, maximum, "overview-bar-clicks"),
-                barRow("Scrolls", page.scrolls, maximum, "chart-bar-behavior"));
-            activityChart.appendChild(group);
+        shoppingChart.appendChild(element("p", "overview-scale", "Sessions · shared scale 0–" + formatNumber(visited)));
+        [
+            ["Visited site", visited],
+            ["Viewed a product", products],
+            ["Then reached checkout", checkout]
+        ].forEach(function ([label, count]) {
+            shoppingChart.appendChild(barRow(label, count, visited, "chart-bar-behavior"));
         });
+
+        const result = products > 0
+            ? formatNumber(checkout) + " of " + formatNumber(products) +
+                " product-viewing sessions reached checkout afterward (" +
+                (checkout / products * 100).toFixed(1) + "%)."
+            : "No product-page views were recorded, so checkout reach cannot be calculated.";
+        shoppingChart.appendChild(element("p", "overview-shopping-result", result));
+
+        if (products > 0) {
+            const remaining = products - checkout;
+            shoppingChart.appendChild(element("p", "overview-shopping-followup",
+                formatNumber(remaining) + " product-viewing " + (remaining === 1 ? "session" : "sessions") +
+                " had no later checkout recorded. " +
+                "Use this as a starting point to review the path to checkout, not proof of abandonment."));
+        }
     }
 
     function renderPerformance(rows) {
@@ -167,10 +181,12 @@
             }))) {
             return false;
         }
-        return !p.behavior || (Array.isArray(payload.charts.interactionsByPage) &&
-            payload.charts.interactionsByPage.every(function (row) {
-                return row && typeof row.pageUrl === "string" && validNumber(row.clicks) && validNumber(row.scrolls);
-            }));
+        const progress = payload.charts.shoppingProgress;
+        return !p.behavior || (progress &&
+            [progress.visitedSessions, progress.productSessions, progress.checkoutSessions].every(function (value) {
+                return Number.isSafeInteger(value) && value >= 0;
+            }) && progress.checkoutSessions <= progress.productSessions &&
+            progress.productSessions <= progress.visitedSessions);
     }
 
     function renderDashboard(payload) {
@@ -182,7 +198,7 @@
         updateMetric("metric-unique-sessions", payload.summary.uniqueSessions, formatNumber, p.technology);
         updateMetric("metric-average-load", payload.summary.averageLoadTimeMs, formatDuration, p.performance);
         if (p.technology) { renderPageChart(payload.charts.pageLoadsByPage); }
-        if (p.behavior) { renderInteractions(payload.charts.interactionsByPage); }
+        if (p.behavior) { renderShopping(payload.charts.shoppingProgress); }
         if (p.performance) { renderPerformance(payload.tables.pagePerformance); }
         startInput.value = payload.dateRange.start;
         endInput.value = payload.dateRange.end;
@@ -201,7 +217,7 @@
         statusMessage.textContent = "Loading analytics data...";
         clearDashboard("Loading analytics data...");
         pageChart.setAttribute("aria-busy", "true");
-        activityChart.setAttribute("aria-busy", "true");
+        shoppingChart.setAttribute("aria-busy", "true");
         performanceTable.setAttribute("aria-busy", "true");
         const query = new URLSearchParams({ start: startInput.value, end: endInput.value });
         try {
@@ -235,7 +251,7 @@
                 applyButton.disabled = false;
                 resetButton.disabled = false;
                 pageChart.setAttribute("aria-busy", "false");
-                activityChart.setAttribute("aria-busy", "false");
+                shoppingChart.setAttribute("aria-busy", "false");
                 performanceTable.setAttribute("aria-busy", "false");
             }
         }

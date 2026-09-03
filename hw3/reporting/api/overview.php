@@ -185,41 +185,50 @@ try {
      * Behavior section
      */
     if ($permissions['behavior']) {
-        // Compare event counts, not inferred engagement or unique people.
-        $activityPageStatement = $pdo->prepare(
-            "SELECT
-                page_url,
-                SUM(CASE WHEN event_type = 'click' THEN 1 ELSE 0 END)
-                    AS clicks,
-                SUM(CASE WHEN event_type = 'scroll' THEN 1 ELSE 0 END)
-                    AS scrolls
-             FROM activity_events
-             WHERE event_time >= :start
-               AND event_time < :end
-               AND event_type IN ('click', 'scroll')
-             GROUP BY page_url
-             ORDER BY COUNT(*) DESC, page_url ASC
-             LIMIT 8"
+        /*
+         * One row per observed shop session, not per click or page load.
+         * An earliest product view followed by any later checkout qualifies.
+         * Both steps must be inside the selected dates; equal times do not
+         * establish an order. Query strings and fragments keep the same step.
+         */
+        $shoppingStatement = $pdo->prepare(
+            "WITH session_progress AS (
+                SELECT
+                    session_id,
+                    MIN(CASE WHEN
+                        page_url = 'https://test.baddecisions.site/product-detail.html'
+                        OR page_url LIKE 'https://test.baddecisions.site/product-detail.html?%'
+                        OR page_url LIKE 'https://test.baddecisions.site/product-detail.html#%'
+                        THEN collected_at END) AS first_product_at,
+                    MAX(CASE WHEN
+                        page_url = 'https://test.baddecisions.site/checkout.html'
+                        OR page_url LIKE 'https://test.baddecisions.site/checkout.html?%'
+                        OR page_url LIKE 'https://test.baddecisions.site/checkout.html#%'
+                        THEN collected_at END) AS last_checkout_at
+                FROM static_data
+                WHERE collected_at >= :start
+                  AND collected_at < :end
+                  AND page_url LIKE 'https://test.baddecisions.site/%'
+                GROUP BY session_id
+             )
+             SELECT
+                COUNT(*) AS visited_sessions,
+                COUNT(first_product_at) AS product_sessions,
+                COALESCE(SUM(CASE
+                    WHEN last_checkout_at > first_product_at THEN 1
+                    ELSE 0 END), 0) AS checkout_sessions
+             FROM session_progress"
         );
 
-        $activityPageStatement->execute(
-            $queryParameters
-        );
+        $shoppingStatement->execute($queryParameters);
 
-        $activityRows =
-            $activityPageStatement->fetchAll();
+        $shopping = $shoppingStatement->fetch() ?: [];
 
-        $response['charts']['interactionsByPage'] =
-            array_map(
-                static function (array $row): array {
-                    return [
-                        'pageUrl' => $row['page_url'],
-                        'clicks' => (int) $row['clicks'],
-                        'scrolls' => (int) $row['scrolls']
-                    ];
-                },
-                $activityRows
-            );
+        $response['charts']['shoppingProgress'] = [
+            'visitedSessions' => (int) ($shopping['visited_sessions'] ?? 0),
+            'productSessions' => (int) ($shopping['product_sessions'] ?? 0),
+            'checkoutSessions' => (int) ($shopping['checkout_sessions'] ?? 0)
+        ];
     }
 
     apiResponse($response);
