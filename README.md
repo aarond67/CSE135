@@ -14,7 +14,7 @@ Aaron Delgado
 
 ## Project overview
 
-This project closes the loop between the analytics collector from HW3 and people who can act on the data. The test store sends page, performance, activity, and error information to the collector. The reporting application reads that data from MySQL and turns it into an overview plus three detailed report categories: Technical Errors, Performance Budget, and Page Engagement.
+This project closes the loop between the analytics collector from HW3 and people who can act on the data. The test store sends page, performance, activity, and error information to the collector. The reporting application reads that data from MySQL and turns it into an overview plus four detailed reports in three categories: Technical Errors, Performance Budget, Page Engagement, and Checkout Drop-off.
 
 The backend uses PHP and MySQL. The interface uses plain JavaScript and CSS so the reporting pages stay small and do not download a large front-end framework before loading the data. GitHub Actions deploys the main site, test store, collector, and reporting application to my DigitalOcean server when I push to `main`.
 
@@ -60,6 +60,12 @@ Guiding question: **Which pages have the strongest meaningful interaction rate, 
 
 A page session counts as engaged when it contains at least one click, scroll, or key press. Mouse movement is not included because it creates a lot of records without showing a clear action. The chart compares engaged-session rates instead of raw activity totals, and the table keeps the page-session sample size beside the click, scroll, and key-press counts. A page with no scrolling is not automatically treated as bad; a short page may not need scrolling, and clicks or keyboard use can still make the session engaged. The shopping funnel remains on the dashboard as a high-level overview.
 
+### Checkout Drop-off
+
+Guiding question: **Where in the checkout flow are the most sessions dropping off before the demo success message?**
+
+This report gives the shopping funnel its own detailed behavior view. It follows sessions in order from a product view to checkout, payment, review, and the randomized demo-success message. The funnel makes the narrowing path easy to see, while the table gives the exact loss and continuation rate between each pair of stages. Checkout step events contain only the step number; the collector does not receive names, addresses, card numbers, or other checkout field values. Payment and review tracking begins with this version, so older sessions may appear to stop at checkout even if they continued. The final message is part of the test site and is not a verified purchase.
+
 ## Saving, publishing, and exporting
 
 Each report has an analyst-comments field for explaining what the data means and what should be checked next. Super admins and permitted analysts can save a report as a draft or publish it. Viewers only see published reports.
@@ -88,4 +94,4 @@ Database credentials remain outside the repository and web root in `/etc/cse135/
 sudo mysql < hw3/database/hw5_schema.sql
 ```
 
-The HW5 schema creates the three saved-report records if needed while preserving existing comments and publication status.
+The HW5 schema creates the four saved-report records if needed while preserving existing comments and publication status.

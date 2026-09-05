@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Checkout - Wrecked Tech</title>
-    <script src="https://collector.baddecisions.site/collector.js?v=demo-success-1"></script>
+    <script src="https://collector.baddecisions.site/collector.js?v=checkout-steps-1"></script>
     <script src="js/upgrade-products.js"></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -146,6 +146,12 @@
     <script>
         var currentStep = 1;
         var formData = {};
+
+        function reportCheckoutStep() {
+            window.dispatchEvent(new CustomEvent('cse135:checkout-step', {
+                detail: { step: currentStep }
+            }));
+        }
         
         function nextStep() {
             if (currentStep === 1) {
@@ -171,6 +177,8 @@
             if (currentStep === 3) {
                 updateReview();
             }
+
+            reportCheckoutStep();
             
             window.scrollTo(0, 0);
         }
@@ -246,6 +254,7 @@
         }
         
         calculateShipping();
+        reportCheckoutStep();
         setInterval(calculateShipping, 10000);
         
         document.querySelectorAll('input').forEach(function(input) {

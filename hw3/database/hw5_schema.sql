@@ -35,6 +35,15 @@ INSERT INTO saved_reports (
     NULL,
     NULL,
     FALSE
+),
+(
+    'checkout-dropoff',
+    'Checkout Drop-off',
+    'behavior',
+    'Where in the checkout flow are the most sessions dropping off before the demo success message?',
+    NULL,
+    NULL,
+    FALSE
 )
 ON DUPLICATE KEY UPDATE
     title = VALUES(title),

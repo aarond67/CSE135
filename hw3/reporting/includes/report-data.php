@@ -214,6 +214,142 @@ function getShoppingProgress(array $range): array
     ];
 }
 
+function getCheckoutDropoffReportData(array $range): array
+{
+    $statement = database()->prepare(
+        "WITH product_progress AS (
+            SELECT session_id, MIN(collected_at) AS first_product_at
+            FROM static_data
+            WHERE collected_at >= :start
+              AND collected_at < :end
+              AND (
+                page_url = 'https://test.baddecisions.site/product-detail.html'
+                OR page_url LIKE 'https://test.baddecisions.site/product-detail.html?%'
+                OR page_url LIKE 'https://test.baddecisions.site/product-detail.html#%'
+              )
+            GROUP BY session_id
+         ), checkout_progress AS (
+            SELECT p.session_id, MIN(s.collected_at) AS first_checkout_at
+            FROM product_progress p
+            JOIN static_data s
+              ON s.session_id = p.session_id
+             AND s.collected_at > p.first_product_at
+             AND s.collected_at < :checkout_end
+             AND (
+                s.page_url = 'https://test.baddecisions.site/checkout.html'
+                OR s.page_url LIKE 'https://test.baddecisions.site/checkout.html?%'
+                OR s.page_url LIKE 'https://test.baddecisions.site/checkout.html#%'
+             )
+            GROUP BY p.session_id
+         ), checkout_steps AS (
+            SELECT
+                session_id,
+                event_time,
+                CAST(JSON_UNQUOTE(JSON_EXTRACT(event_data, '$.step')) AS UNSIGNED) AS step_number
+            FROM activity_events
+            WHERE event_type = 'checkout-step'
+              AND event_time >= :event_start
+              AND event_time < :event_end
+         ), payment_progress AS (
+            SELECT c.session_id, MIN(e.event_time) AS first_payment_at
+            FROM checkout_progress c
+            JOIN checkout_steps e
+              ON e.session_id = c.session_id
+             AND e.step_number = 2
+             AND e.event_time > c.first_checkout_at
+            GROUP BY c.session_id
+         ), review_progress AS (
+            SELECT p.session_id, MIN(e.event_time) AS first_review_at
+            FROM payment_progress p
+            JOIN checkout_steps e
+              ON e.session_id = p.session_id
+             AND e.step_number = 3
+             AND e.event_time > p.first_payment_at
+            GROUP BY p.session_id
+         ), demo_successes AS (
+            SELECT r.session_id, MIN(a.event_time) AS first_success_at
+            FROM review_progress r
+            JOIN activity_events a
+              ON a.session_id = r.session_id
+             AND a.event_type = 'demo-order-success'
+             AND a.event_time > r.first_review_at
+             AND a.event_time < :success_end
+            GROUP BY r.session_id
+         )
+         SELECT
+            COUNT(*) AS product_sessions,
+            COUNT(c.first_checkout_at) AS checkout_sessions,
+            COUNT(p.first_payment_at) AS payment_sessions,
+            COUNT(r.first_review_at) AS review_sessions,
+            COUNT(d.first_success_at) AS success_sessions
+         FROM product_progress products
+         LEFT JOIN checkout_progress c ON c.session_id = products.session_id
+         LEFT JOIN payment_progress p ON p.session_id = products.session_id
+         LEFT JOIN review_progress r ON r.session_id = products.session_id
+         LEFT JOIN demo_successes d ON d.session_id = products.session_id"
+    );
+
+    $statement->execute([
+        'start' => $range['sql_start'],
+        'end' => $range['sql_end'],
+        'checkout_end' => $range['sql_end'],
+        'event_start' => $range['sql_start'],
+        'event_end' => $range['sql_end'],
+        'success_end' => $range['sql_end']
+    ]);
+
+    $row = $statement->fetch() ?: [];
+    $counts = [
+        'product' => (int) ($row['product_sessions'] ?? 0),
+        'checkout' => (int) ($row['checkout_sessions'] ?? 0),
+        'payment' => (int) ($row['payment_sessions'] ?? 0),
+        'review' => (int) ($row['review_sessions'] ?? 0),
+        'success' => (int) ($row['success_sessions'] ?? 0)
+    ];
+    $labels = [
+        'product' => 'Viewed a product',
+        'checkout' => 'Opened checkout',
+        'payment' => 'Reached payment',
+        'review' => 'Reached review',
+        'success' => 'Demo success shown'
+    ];
+    $stages = [];
+    $previous = null;
+    $previousLabel = null;
+    $largestDrop = null;
+
+    foreach ($labels as $key => $label) {
+        $count = $counts[$key];
+        $drop = $previous === null ? null : max($previous - $count, 0);
+        $continued = $previous === null || $previous === 0
+            ? null
+            : round($count / $previous * 100, 1);
+
+        $stage = [
+            'key' => $key,
+            'label' => $label,
+            'count' => $count,
+            'drop' => $drop,
+            'continued_rate' => $continued,
+            'previous_label' => $previousLabel
+        ];
+        $stages[] = $stage;
+
+        if ($drop !== null && ($largestDrop === null || $drop > $largestDrop['drop'])) {
+            $largestDrop = $stage;
+        }
+
+        $previous = $count;
+        $previousLabel = $label;
+    }
+
+    return [
+        'counts' => $counts,
+        'stages' => $stages,
+        'largest_drop' => $largestDrop
+    ];
+}
+
 function getPageEngagementReportData(array $range): array
 {
     $statement = database()->prepare(

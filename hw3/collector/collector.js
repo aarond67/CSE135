@@ -160,6 +160,27 @@
         sendActivityBatch();
     });
 
+    // The test checkout only sends the step number. It never sends the
+    // information typed into any checkout field.
+    const checkoutStepsSent = new Set();
+
+    window.addEventListener("cse135:checkout-step", function (event) {
+        const step = Number(event.detail && event.detail.step);
+
+        if (
+            ![1, 2, 3].includes(step) ||
+            checkoutStepsSent.has(step) ||
+            window.location.origin !== "https://test.baddecisions.site" ||
+            window.location.pathname !== "/checkout.html"
+        ) {
+            return;
+        }
+
+        checkoutStepsSent.add(step);
+        queueActivity("checkout-step", { step: step });
+        sendActivityBatch();
+    });
+
     window.addEventListener("mousemove", function (event) {
         const currentTime = Date.now();
 

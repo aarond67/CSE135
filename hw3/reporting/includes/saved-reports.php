@@ -31,6 +31,15 @@ function reportDefinitions(): array
             'guiding_question' =>
                 'Which pages have the strongest meaningful interaction rate, and which pages need a closer look?',
             'path' => '/reports/engagement.php'
+        ],
+        'checkout-dropoff' => [
+            'report_key' => 'checkout-dropoff',
+            'title' => 'Checkout Drop-off',
+            'category' => 'behavior',
+            'category_label' => 'Checkout behavior',
+            'guiding_question' =>
+                'Where in the checkout flow are the most sessions dropping off before the demo success message?',
+            'path' => '/reports/checkout.php'
         ]
     ];
 }

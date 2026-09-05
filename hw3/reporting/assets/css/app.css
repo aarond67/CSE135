@@ -620,6 +620,25 @@ a.button {
     margin-top: 1.25rem;
 }
 
+.report-finding,
+.report-caveat {
+    margin: 1.25rem 0 0;
+    padding: 1rem;
+    line-height: 1.55;
+}
+
+.report-finding {
+    color: #115e59;
+    background: #f0fdfa;
+    border-left: 3px solid #0f766e;
+}
+
+.report-caveat {
+    color: #475569;
+    background: #f8fafc;
+    border-left: 3px solid #94a3b8;
+}
+
 .url-cell {
     max-width: 24rem;
     overflow-wrap: anywhere;

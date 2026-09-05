@@ -88,6 +88,33 @@ if ($report['category'] === 'technology') {
         ],
         $data['details']
     );
+} elseif ($report['report_key'] === 'checkout-dropoff') {
+    $data = getCheckoutDropoffReportData($range);
+
+    $chartTitle = 'Sessions reaching each checkout stage';
+    $chartNote = 'Stages count ordered sessions. Checkout step events contain only the step number and no form values.';
+    $chartRows = array_map(
+        static fn (array $stage): array => [
+            'label' => (string) $stage['label'],
+            'value' => (float) $stage['count'],
+            'display' => number_format((int) $stage['count']) . ' sessions'
+        ],
+        $data['stages']
+    );
+
+    $tableTitle = 'Stage-by-stage drop-off';
+    $tableHeaders = ['Stage reached', 'Sessions', 'Drop from prior', 'Continued from prior'];
+    $tableRows = array_map(
+        static fn (array $stage): array => [
+            (string) $stage['label'],
+            number_format((int) $stage['count']),
+            $stage['drop'] === null ? '—' : number_format((int) $stage['drop']),
+            $stage['continued_rate'] === null
+                ? '—'
+                : number_format((float) $stage['continued_rate'], 1) . '%'
+        ],
+        $data['stages']
+    );
 } elseif ($report['category'] === 'behavior') {
     $data = getPageEngagementReportData($range);
     $chartMinimumMaximum = 100;
