@@ -2,101 +2,210 @@
 
 declare(strict_types=1);
 
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
-require_once dirname(__DIR__) . '/includes/simple-pdf.php';
 
 $reportKey = is_string($_GET['key'] ?? null) ? $_GET['key'] : '';
 [$user, $report, $savedReport] = requireSavedReportAccess($reportKey);
 $range = getReportDateRange();
 
-$pdf = new SimplePdf();
-$pdf->title($report['title']);
-$pdf->paragraph('Bad Decisions Analytics | ' . $range['start'] . ' through ' . $range['end'] . ' UTC');
-$pdf->heading('Guiding question');
-$pdf->paragraph($report['guiding_question']);
+$autoloadPath = dirname(__DIR__) . '/vendor/autoload.php';
+
+if (!is_file($autoloadPath)) {
+    abortRequest(
+        500,
+        'PDF Export Unavailable',
+        'The PDF dependency has not been installed on the reporting server.'
+    );
+}
+
+try {
+    require_once $autoloadPath;
+} catch (Throwable $error) {
+    error_log('PDF dependency error: ' . $error->getMessage());
+    abortRequest(
+        500,
+        'PDF Export Unavailable',
+        'The reporting server could not load the PDF dependency.'
+    );
+}
+
+if (!class_exists(Dompdf::class)) {
+    abortRequest(
+        500,
+        'PDF Export Unavailable',
+        'The reporting server could not load the PDF dependency.'
+    );
+}
+
+/**
+ * Shorten a collected URL for display while keeping its query string.
+ */
+function reportPageLabel(string $url): string
+{
+    $path = parse_url($url, PHP_URL_PATH);
+    $query = parse_url($url, PHP_URL_QUERY);
+    $label = is_string($path) && $path !== '' ? $path : $url;
+
+    return is_string($query) && $query !== ''
+        ? $label . '?' . $query
+        : $label;
+}
+
+$chartTitle = '';
+$chartNote = '';
+$chartRows = [];
+$tableTitle = '';
+$tableHeaders = [];
+$tableRows = [];
 
 if ($report['category'] === 'technology') {
     $data = getTechnologyReportData($range);
-    $maximum = max(array_map(
-        static fn (array $row): int => (int) $row['page_loads'],
-        $data['browsers'] ?: [['page_loads' => 0]]
-    ));
 
-    $pdf->heading('Page loads by browser');
-    foreach ($data['browsers'] as $row) {
-        $pdf->bar($row['browser'], (float) $row['page_loads'], $maximum, (string) $row['page_loads']);
-    }
+    $chartTitle = 'Page loads by browser';
+    $chartNote = 'Recorded page loads, including repeat visits.';
+    $chartRows = array_map(
+        static fn (array $row): array => [
+            'label' => (string) $row['browser'],
+            'value' => (float) $row['page_loads'],
+            'display' => number_format((int) $row['page_loads'])
+        ],
+        $data['browsers']
+    );
 
-    $pdf->heading('Screen-size summary');
-    $pdf->row(['Screen group', 'Sessions', 'Loads', 'Avg width']);
-    foreach ($data['devices'] as $row) {
-        $pdf->row([
-            $row['screen_group'],
-            $row['sessions'],
-            $row['page_loads'],
-            ($row['average_screen_width'] ?? 'n/a') . ' px'
-        ]);
-    }
+    $tableTitle = 'Screen-size summary';
+    $tableHeaders = ['Screen group', 'Sessions', 'Page loads', 'Average width'];
+    $tableRows = array_map(
+        static fn (array $row): array => [
+            (string) $row['screen_group'],
+            number_format((int) $row['sessions']),
+            number_format((int) $row['page_loads']),
+            $row['average_screen_width'] !== null
+                ? number_format((float) $row['average_screen_width'], 0) . ' px'
+                : 'Not available'
+        ],
+        $data['devices']
+    );
 } elseif ($report['category'] === 'behavior') {
     $data = getBehaviorReportData($range);
     $progress = $data['progress'];
-    $maximum = max($progress['visited'], 1);
 
-    $pdf->heading('Sessions reaching each shopping step');
-    foreach ([
-        'Visited site' => $progress['visited'],
-        'Viewed product' => $progress['product'],
-        'Reached checkout' => $progress['checkout'],
-        'Demo success shown' => $progress['success']
-    ] as $label => $count) {
-        $pdf->bar($label, $count, $maximum, (string) $count);
-    }
+    $chartTitle = 'Sessions reaching each shopping step';
+    $chartNote = 'Each session counts once per step, and the steps must occur in order.';
+    $chartRows = [
+        [
+            'label' => 'Visited site',
+            'value' => $progress['visited'],
+            'display' => number_format($progress['visited'])
+        ],
+        [
+            'label' => 'Viewed product',
+            'value' => $progress['product'],
+            'display' => number_format($progress['product'])
+        ],
+        [
+            'label' => 'Reached checkout',
+            'value' => $progress['checkout'],
+            'display' => number_format($progress['checkout'])
+        ],
+        [
+            'label' => 'Demo success shown',
+            'value' => $progress['success'],
+            'display' => number_format($progress['success'])
+        ]
+    ];
 
-    $pdf->heading('Pages recording JavaScript errors');
-    $pdf->row(['Page', 'Errors', 'Latest', 'Message']);
-    foreach ($data['errors'] as $row) {
-        $pdf->row([
-            parse_url($row['page_url'], PHP_URL_PATH) ?: $row['page_url'],
-            $row['error_count'],
-            $row['latest_error'],
-            $row['example_message'] ?? 'No message'
-        ]);
-    }
+    $tableTitle = 'Pages recording JavaScript errors';
+    $tableHeaders = ['Page', 'Errors', 'Latest occurrence', 'Example message'];
+    $tableRows = array_map(
+        static fn (array $row): array => [
+            reportPageLabel((string) $row['page_url']),
+            number_format((int) $row['error_count']),
+            (string) $row['latest_error'] . ' UTC',
+            (string) ($row['example_message'] ?? 'No message recorded')
+        ],
+        $data['errors']
+    );
 } else {
     $rows = getPerformanceExportData($range);
-    $maximum = max(array_map(
-        static fn (array $row): float => (float) $row['average_ms'],
-        $rows ?: [['average_ms' => 0]]
-    ));
 
-    $pdf->heading('Average load time by page');
-    foreach ($rows as $row) {
-        $label = parse_url($row['page_url'], PHP_URL_PATH) ?: $row['page_url'];
-        $pdf->bar($label, (float) $row['average_ms'], $maximum, number_format((float) $row['average_ms'], 1) . ' ms');
-    }
+    $chartTitle = 'Average load time by page';
+    $chartNote = 'Longer bars identify pages that deserve a closer performance review.';
+    $chartRows = array_map(
+        static fn (array $row): array => [
+            'label' => reportPageLabel((string) $row['page_url']),
+            'value' => (float) $row['average_ms'],
+            'display' => number_format((float) $row['average_ms'], 1) . ' ms'
+        ],
+        $rows
+    );
 
-    $pdf->heading('Page performance');
-    $pdf->row(['Page', 'Samples', 'Average', 'Slowest']);
-    foreach ($rows as $row) {
-        $pdf->row([
-            parse_url($row['page_url'], PHP_URL_PATH) ?: $row['page_url'],
-            $row['measurements'],
-            $row['average_ms'] . ' ms',
-            $row['slowest_ms'] . ' ms'
-        ]);
-    }
+    $tableTitle = 'Page performance';
+    $tableHeaders = ['Page', 'Measurements', 'Average', 'Slowest'];
+    $tableRows = array_map(
+        static fn (array $row): array => [
+            reportPageLabel((string) $row['page_url']),
+            number_format((int) $row['measurements']),
+            number_format((float) $row['average_ms'], 1) . ' ms',
+            number_format((float) $row['slowest_ms'], 1) . ' ms'
+        ],
+        $rows
+    );
 }
 
-$pdf->heading('Analyst comments');
-$pdf->paragraph(
-    ($savedReport['analyst_comments'] ?? '') !== ''
-        ? substr((string) $savedReport['analyst_comments'], 0, 1200)
-        : 'No analyst comments were saved with this report.'
+$chartMaximum = max(
+    array_map(
+        static fn (array $row): float => (float) $row['value'],
+        $chartRows ?: [['value' => 0]]
+    ),
+    1
 );
 
-$filename = preg_replace('/[^a-z0-9-]+/', '-', strtolower($reportKey)) . '-' . $range['end'] . '.pdf';
+$comments = trim((string) ($savedReport['analyst_comments'] ?? ''));
+$reportPdfCss = file_get_contents(
+    dirname(__DIR__) . '/assets/css/report-pdf.css'
+);
 
-header('Content-Type: application/pdf');
-header('Content-Disposition: attachment; filename="' . $filename . '"');
-header('Cache-Control: private, no-store');
-echo $pdf->output();
+if ($reportPdfCss === false) {
+    abortRequest(
+        500,
+        'PDF Export Unavailable',
+        'The PDF stylesheet could not be loaded.'
+    );
+}
+
+ob_start();
+require dirname(__DIR__) . '/templates/report-pdf.php';
+$reportHtml = ob_get_clean();
+
+if (!is_string($reportHtml)) {
+    abortRequest(500, 'PDF Export Unavailable', 'The report template could not be rendered.');
+}
+
+$options = new Options();
+$options->set('defaultFont', 'DejaVu Sans');
+$options->set('isRemoteEnabled', false);
+$options->set('isPhpEnabled', false);
+$options->set('chroot', dirname(__DIR__));
+
+$filename = preg_replace('/[^a-z0-9-]+/', '-', strtolower($reportKey))
+    . '-' . $range['end'] . '.pdf';
+
+try {
+    $pdf = new Dompdf($options);
+    $pdf->loadHtml($reportHtml, 'UTF-8');
+    $pdf->setPaper('letter', 'portrait');
+    $pdf->render();
+
+    header('Cache-Control: private, no-store');
+    $pdf->stream($filename, ['Attachment' => true]);
+} catch (Throwable $error) {
+    error_log('PDF render error: ' . $error->getMessage());
+    abortRequest(
+        500,
+        'PDF Export Unavailable',
+        'The PDF could not be generated. Please try again.'
+    );
+}

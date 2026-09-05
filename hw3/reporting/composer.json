@@ -1,0 +1,11 @@
+{
+    "name": "aarond67/cse135-reporting",
+    "description": "Server-side dependencies for the analytics reporting application",
+    "type": "project",
+    "require": {
+        "dompdf/dompdf": "3.1.6"
+    },
+    "config": {
+        "sort-packages": true
+    }
+}

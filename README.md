@@ -64,13 +64,13 @@ The funnel counts a product view, later checkout visit, and later demo-success e
 
 Each report has an analyst-comments field for explaining what the data means and what should be checked next. Super admins and permitted analysts can save a report as a draft or publish it. Viewers only see published reports.
 
-Every accessible report has a server-generated PDF export. The export repeats the report title, guiding question, selected UTC dates, important chart values, table values, and saved analyst comments. Export authorization uses the same rules as the HTML report, so a direct export URL does not bypass report permissions.
+Every accessible report has a server-generated PDF export. The export repeats the report title, guiding question, selected UTC dates, important chart values, table values, and saved analyst comments. The PDF uses a separate HTML template and print stylesheet so it keeps the same cream-and-green visual style without mixing the document layout into the export controller. Dompdf converts that template into a multi-page PDF on the server. Export authorization uses the same rules as the HTML report, so a direct export URL does not bypass report permissions.
 
 ## Error handling and performance
 
 The reporting application includes custom 403, 404, and 500 pages, protects internal include files, rejects invalid methods and date ranges, and shows a notice when JavaScript is disabled on the interactive dashboard or performance report. The Technology and Behavior reports are rendered by PHP and remain readable without JavaScript.
 
-The application deliberately avoids a front-end framework and charting package. Most visualizations use regular HTML and CSS, and the API limits detailed performance samples to the latest 100 records. This keeps the pages small while preserving readable labels and exact table values.
+The application deliberately avoids a front-end framework and browser charting package. Most visualizations use regular HTML and CSS, and the API limits detailed performance samples to the latest 100 records. Dompdf is used only on the server when somebody requests an export, so it does not increase the JavaScript or page weight downloaded by dashboard users. This keeps the interactive pages small while preserving readable labels and exact table values.
 
 ## AI use
 
@@ -78,7 +78,7 @@ I used ChatGPT/Codex while building the project to help review PHP and SQL, work
 
 ## Roadmap
 
-With more time, I would save each published report's exact date range so a viewer always sees a frozen snapshot, add pagination as the dataset grows, compare current results with a previous period, and use a mature PDF layout package for multi-page exports with larger tables. I would also add automated browser tests for the complete login, publish, viewer, and export scenario.
+With more time, I would save each published report's exact date range so a viewer always sees a frozen snapshot, add pagination as the dataset grows, compare current results with a previous period, and add automated browser tests for the complete login, publish, viewer, and export scenario.
 
 ## Setup notes
 

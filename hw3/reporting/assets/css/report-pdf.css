@@ -1,0 +1,199 @@
+@page {
+    margin: 0.5in;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    color: #17211c;
+    background: #f3eee3;
+    font-family: "DejaVu Sans", sans-serif;
+    font-size: 10pt;
+    line-height: 1.45;
+}
+
+.report-header {
+    padding: 24px 28px;
+    color: #fffdf7;
+    background: #173f35;
+    border-bottom: 6px solid #c8943f;
+}
+
+.brand,
+.section-label {
+    margin: 0 0 7px;
+    color: #c8943f;
+    font-size: 8.5pt;
+    font-weight: bold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.report-header h1 {
+    margin: 0;
+    font-size: 24pt;
+    line-height: 1.15;
+}
+
+.date-range {
+    margin: 9px 0 0;
+    color: #dce9e3;
+    font-size: 9.5pt;
+}
+
+main {
+    padding-top: 4px;
+}
+
+.report-section {
+    margin: 14px 0 0;
+    padding: 17px 19px;
+    background: #fffdf8;
+    border: 1px solid #d8cfbf;
+}
+
+.question-section,
+.chart-section {
+    page-break-inside: avoid;
+}
+
+.question-section {
+    background: #eee7d8;
+    border-left: 5px solid #c8943f;
+}
+
+.question-section h2 {
+    margin-bottom: 0;
+    font-size: 14pt;
+    line-height: 1.4;
+}
+
+h2 {
+    margin: 0 0 9px;
+    color: #173f35;
+    font-size: 15pt;
+    line-height: 1.25;
+}
+
+.section-note {
+    margin: -2px 0 13px;
+    color: #56655e;
+    font-size: 9pt;
+}
+
+.bar-chart,
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.bar-chart tr {
+    page-break-inside: avoid;
+}
+
+.bar-chart th,
+.bar-chart td {
+    padding: 6px 0;
+    vertical-align: middle;
+}
+
+.bar-chart th {
+    width: 28%;
+    padding-right: 12px;
+    text-align: left;
+    font-size: 9pt;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.bar-cell {
+    width: 60%;
+}
+
+.bar-track {
+    width: 100%;
+    height: 14px;
+    background: #dfe5e1;
+}
+
+.bar-fill {
+    height: 14px;
+    background: #23745d;
+}
+
+.bar-value {
+    width: 12%;
+    padding-left: 11px !important;
+    text-align: right;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.report-table {
+    table-layout: fixed;
+    font-size: 8.5pt;
+}
+
+.report-table thead {
+    display: table-header-group;
+}
+
+.report-table tr {
+    page-break-inside: avoid;
+}
+
+.report-table th {
+    padding: 8px;
+    color: #fffdf7;
+    background: #173f35;
+    text-align: left;
+    font-size: 8pt;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.report-table td {
+    padding: 8px;
+    border-bottom: 1px solid #ded7ca;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    vertical-align: top;
+}
+
+.report-table tbody tr:nth-child(even) td {
+    background: #f5f1e8;
+}
+
+.report-table th:first-child,
+.report-table td:first-child {
+    width: 25%;
+}
+
+.comments-section {
+    border-left: 5px solid #23745d;
+}
+
+.analyst-comments {
+    margin: 0;
+    white-space: normal;
+}
+
+.empty-state {
+    margin: 0;
+    padding: 10px 12px;
+    color: #56655e;
+    background: #f3eee3;
+    border: 1px dashed #bfb5a4;
+}
+
+footer {
+    margin-top: 14px;
+    padding-top: 8px;
+    color: #66726c;
+    border-top: 1px solid #cfc6b6;
+    font-size: 7.5pt;
+    text-align: center;
+}

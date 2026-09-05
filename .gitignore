@@ -2,3 +2,5 @@
 *.log
 .env
 .env.*
+
+/hw3/reporting/vendor/
