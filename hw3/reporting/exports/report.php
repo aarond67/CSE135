@@ -155,11 +155,11 @@ if ($report['category'] === 'technology') {
     );
 }
 
-$chartMaximum = max(
+$chartMaximum = max(max(
     array_map(
         static fn (array $row): float => (float) $row['value'],
         $chartRows ?: [['value' => 0]]
-    ),
+    )),
     1
 );
 
