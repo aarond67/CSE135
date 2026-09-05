@@ -7,6 +7,8 @@
     const applyButton = document.getElementById("performance-apply");
     const resetButton = document.getElementById("performance-reset");
     const statusMessage = document.getElementById("performance-status");
+    const budgetChart = document.getElementById("performance-budget-chart");
+    const budgetTable = document.getElementById("performance-budget-table");
     const loadTimeChart = document.getElementById("performance-page-chart");
     const stageTable = document.getElementById("performance-stage-values");
     const dotButton = document.getElementById("performance-view-dots");
@@ -29,8 +31,8 @@
     const metricIds = [
         "performance-measurements",
         "performance-average",
-        "performance-fastest",
-        "performance-slowest"
+        "performance-within-budget",
+        "performance-over-budget"
     ];
 
     let latestRequestId = 0;
@@ -87,6 +89,8 @@
 
         loadTimeChart.replaceChildren(paragraph);
 
+        budgetChart.replaceChildren(createElement("p", "empty-state", message));
+        budgetTable.replaceChildren(createElement("p", "empty-state", message));
         stageTable.replaceChildren(createElement("p", "empty-state", message));
     }
 
@@ -158,6 +162,120 @@
 
     function emptyChart(message) {
         loadTimeChart.appendChild(createElement("p", "empty-state", message));
+    }
+
+    function renderBudgetChart(pages, budgetMs) {
+        budgetChart.replaceChildren();
+
+        if (!pages.length) {
+            budgetChart.appendChild(createElement(
+                "p",
+                "empty-state",
+                "No valid page-load measurements in this date range."
+            ));
+            return;
+        }
+
+        const largestP75 = Math.max(...pages.map(function (page) {
+            return page.p75LoadTimeMs;
+        }), budgetMs);
+        const axisMaximum = getAxisMaximum(largestP75);
+        const budgetPosition = Math.min(budgetMs / axisMaximum * 100, 100);
+
+        const note = createElement(
+            "p",
+            "performance-budget-scale",
+            "Shared scale 0–" + formatMilliseconds(axisMaximum) +
+                " ms. Dashed line = " + formatMilliseconds(budgetMs) + " ms budget."
+        );
+        budgetChart.appendChild(note);
+
+        pages.slice(0, 10).forEach(function (page) {
+            const row = createElement("div", "performance-budget-row");
+            const label = createElement("span", "chart-label", getPageLabel(page.pageUrl));
+            const track = createElement("div", "performance-budget-track");
+            const bar = createElement(
+                "span",
+                "performance-budget-bar " + (page.withinBudget ? "is-within" : "is-over")
+            );
+            const marker = createElement("span", "performance-budget-marker");
+            const value = createElement("strong", "performance-budget-value");
+
+            label.title = page.pageUrl;
+            bar.style.width = Math.min(page.p75LoadTimeMs / axisMaximum * 100, 100) + "%";
+            marker.style.left = budgetPosition + "%";
+            marker.setAttribute("aria-hidden", "true");
+            value.textContent = formatDuration(page.p75LoadTimeMs);
+            value.appendChild(createElement(
+                "small",
+                page.withinBudget ? "budget-pass" : "budget-fail",
+                page.withinBudget ? "Within budget" : "Over budget"
+            ));
+            track.setAttribute("aria-hidden", "true");
+            track.append(bar, marker);
+            row.append(label, track, value);
+            budgetChart.appendChild(row);
+        });
+    }
+
+    function renderBudgetTable(pages, budgetMs) {
+        if (!pages.length) {
+            budgetTable.replaceChildren(createElement(
+                "p",
+                "empty-state",
+                "No valid page-load measurements in this date range."
+            ));
+            return;
+        }
+
+        const wrapper = createElement("div", "table-wrapper");
+        wrapper.tabIndex = 0;
+        wrapper.setAttribute("role", "region");
+        wrapper.setAttribute("aria-label", "Performance budget results; scroll horizontally if needed");
+        const table = createElement("table", "data-table");
+        const head = document.createElement("thead");
+        const headingRow = document.createElement("tr");
+
+        ["Page", "Measurements", "p75 load", "Average", "Slowest", "Budget result"].forEach(function (heading) {
+            const cell = document.createElement("th");
+            cell.scope = "col";
+            cell.textContent = heading;
+            headingRow.appendChild(cell);
+        });
+        head.appendChild(headingRow);
+
+        const body = document.createElement("tbody");
+        pages.forEach(function (page) {
+            const row = document.createElement("tr");
+            const pageCell = document.createElement("th");
+            pageCell.scope = "row";
+            pageCell.className = "url-cell";
+            pageCell.title = page.pageUrl;
+            pageCell.textContent = getPageLabel(page.pageUrl);
+            row.appendChild(pageCell);
+
+            [
+                numberFormatter.format(page.measurements),
+                formatDuration(page.p75LoadTimeMs),
+                formatDuration(page.averageLoadTimeMs),
+                formatDuration(page.slowestLoadTimeMs)
+            ].forEach(function (value) {
+                row.appendChild(createElement("td", "", value));
+            });
+
+            row.appendChild(createElement(
+                "td",
+                page.withinBudget ? "budget-pass" : "budget-fail",
+                page.withinBudget
+                    ? "Within " + formatMilliseconds(budgetMs) + " ms"
+                    : "Over by " + formatDuration(page.p75LoadTimeMs - budgetMs)
+            ));
+            body.appendChild(row);
+        });
+
+        table.append(head, body);
+        wrapper.appendChild(table);
+        budgetTable.replaceChildren(wrapper);
     }
 
     function renderDots(records) {
@@ -411,14 +529,17 @@
         );
 
         setText(
-            "performance-fastest",
-            count > 0 ? formatDuration(summary.fastestLoadTimeMs) : "—"
+            "performance-within-budget",
+            numberFormatter.format(summary.pagesWithinBudget)
         );
 
         setText(
-            "performance-slowest",
-            count > 0 ? formatDuration(summary.slowestLoadTimeMs) : "—"
+            "performance-over-budget",
+            numberFormatter.format(summary.pagesOverBudget)
         );
+
+        renderBudgetChart(payload.byPage, summary.budgetMs);
+        renderBudgetTable(payload.byPage, summary.budgetMs);
 
         sampleRecords = payload.records;
         totalMeasurements = count;
@@ -463,6 +584,8 @@
         statusMessage.className = "status-message";
         statusMessage.textContent = "Loading performance data...";
         loadTimeChart.setAttribute("aria-busy", "true");
+        budgetChart.setAttribute("aria-busy", "true");
+        budgetTable.setAttribute("aria-busy", "true");
         stageTable.setAttribute("aria-busy", "true");
 
         showPlaceholder("Loading performance data...");
@@ -514,7 +637,18 @@
                 !payload.summary ||
                 !payload.dateRange ||
                 !Array.isArray(payload.byPage) ||
-                !Array.isArray(payload.records)
+                !Array.isArray(payload.records) ||
+                !isValidDuration(payload.summary.budgetMs) ||
+                !isValidDuration(payload.summary.pagesWithinBudget) ||
+                !isValidDuration(payload.summary.pagesOverBudget) ||
+                !payload.byPage.every(function (page) {
+                    return typeof page.pageUrl === "string" &&
+                        isValidDuration(page.measurements) &&
+                        isValidDuration(page.p75LoadTimeMs) &&
+                        isValidDuration(page.averageLoadTimeMs) &&
+                        isValidDuration(page.slowestLoadTimeMs) &&
+                        typeof page.withinBudget === "boolean";
+                })
             ) {
                 throw new Error(
                     "The server returned an unexpected response."
@@ -541,6 +675,8 @@
                 applyButton.disabled = false;
                 resetButton.disabled = false;
                 loadTimeChart.setAttribute("aria-busy", "false");
+                budgetChart.setAttribute("aria-busy", "false");
+                budgetTable.setAttribute("aria-busy", "false");
                 stageTable.setAttribute("aria-busy", "false");
             }
         }

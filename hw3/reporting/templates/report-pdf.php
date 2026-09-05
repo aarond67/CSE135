@@ -30,7 +30,7 @@ if (!isset($report, $range, $chartRows, $tableRows, $reportPdfCss)) {
         </section>
 
         <section class="report-section chart-section">
-            <p class="section-label"><?= escape(ucfirst($report['category'])) ?></p>
+            <p class="section-label"><?= escape($report['category_label']) ?></p>
             <h2><?= escape($chartTitle) ?></h2>
             <p class="section-note"><?= escape($chartNote) ?></p>
 

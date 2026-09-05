@@ -49,63 +49,96 @@ function getReportDateRange(): array
     ];
 }
 
-function getTechnologyReportData(array $range): array
+function reportPagePath(string $url): string
+{
+    $path = parse_url($url, PHP_URL_PATH);
+    $query = parse_url($url, PHP_URL_QUERY);
+    $label = is_string($path) && $path !== '' ? $path : $url;
+
+    return is_string($query) && $query !== ''
+        ? $label . '?' . $query
+        : $label;
+}
+
+function getTechnicalErrorReportData(array $range): array
 {
     $params = ['start' => $range['sql_start'], 'end' => $range['sql_end']];
     $pdo = database();
 
-    $browserStatement = $pdo->prepare(
+    $summaryStatement = $pdo->prepare(
         "SELECT
-            CASE
-                WHEN user_agent LIKE '%Edg/%' THEN 'Edge'
-                WHEN user_agent LIKE '%Chrome/%' THEN 'Chrome'
-                WHEN user_agent LIKE '%Firefox/%' THEN 'Firefox'
-                WHEN user_agent LIKE '%Safari/%' THEN 'Safari'
-                ELSE 'Other or unknown'
-            END AS browser,
-            COUNT(*) AS page_loads,
-            COUNT(DISTINCT session_id) AS sessions
-         FROM static_data
-         WHERE collected_at >= :start AND collected_at < :end
-         GROUP BY browser
-         ORDER BY page_loads DESC, browser ASC"
+            COUNT(*) AS error_occurrences,
+            COUNT(DISTINCT session_id) AS affected_sessions,
+            COUNT(DISTINCT page_url) AS affected_pages
+         FROM activity_events
+         WHERE event_time >= :start
+           AND event_time < :end
+           AND event_type = 'error'
+           AND COALESCE(
+                JSON_UNQUOTE(JSON_EXTRACT(event_data, '$.eventType')),
+                'javascript-error'
+           ) = 'javascript-error'"
     );
-    $browserStatement->execute($params);
+    $summaryStatement->execute($params);
 
-    $deviceStatement = $pdo->prepare(
+    $pageStatement = $pdo->prepare(
         "SELECT
-            CASE
-                WHEN screen_width IS NULL THEN 'Unknown'
-                WHEN screen_width <= 767 THEN 'Phone-sized'
-                WHEN screen_width <= 1023 THEN 'Tablet-sized'
-                ELSE 'Desktop-sized'
-            END AS screen_group,
-            COUNT(*) AS page_loads,
-            COUNT(DISTINCT session_id) AS sessions,
-            ROUND(AVG(screen_width), 0) AS average_screen_width,
-            ROUND(AVG(window_width), 0) AS average_window_width
-         FROM static_data
-         WHERE collected_at >= :start AND collected_at < :end
-         GROUP BY screen_group
-         ORDER BY page_loads DESC, screen_group ASC"
+            page_url,
+            COUNT(*) AS error_occurrences,
+            COUNT(DISTINCT session_id) AS affected_sessions,
+            MIN(event_time) AS first_error,
+            MAX(event_time) AS latest_error
+         FROM activity_events
+         WHERE event_time >= :start
+           AND event_time < :end
+           AND event_type = 'error'
+           AND COALESCE(
+                JSON_UNQUOTE(JSON_EXTRACT(event_data, '$.eventType')),
+                'javascript-error'
+           ) = 'javascript-error'
+         GROUP BY page_url
+         ORDER BY affected_sessions DESC, error_occurrences DESC, page_url ASC
+         LIMIT 10"
     );
-    $deviceStatement->execute($params);
+    $pageStatement->execute($params);
 
-    $networkStatement = $pdo->prepare(
+    $detailStatement = $pdo->prepare(
         "SELECT
-            COALESCE(NULLIF(effective_type, ''), 'Unknown') AS connection_type,
-            COUNT(*) AS page_loads
-         FROM static_data
-         WHERE collected_at >= :start AND collected_at < :end
-         GROUP BY connection_type
-         ORDER BY page_loads DESC, connection_type ASC"
+            page_url,
+            COALESCE(
+                NULLIF(JSON_UNQUOTE(JSON_EXTRACT(event_data, '$.message')), ''),
+                'No message recorded'
+            ) AS error_message,
+            NULLIF(JSON_UNQUOTE(JSON_EXTRACT(event_data, '$.filename')), '') AS filename,
+            NULLIF(JSON_UNQUOTE(JSON_EXTRACT(event_data, '$.lineNumber')), '') AS line_number,
+            COUNT(*) AS error_occurrences,
+            COUNT(DISTINCT session_id) AS affected_sessions,
+            MIN(event_time) AS first_error,
+            MAX(event_time) AS latest_error
+         FROM activity_events
+         WHERE event_time >= :start
+           AND event_time < :end
+           AND event_type = 'error'
+           AND COALESCE(
+                JSON_UNQUOTE(JSON_EXTRACT(event_data, '$.eventType')),
+                'javascript-error'
+           ) = 'javascript-error'
+         GROUP BY page_url, error_message, filename, line_number
+         ORDER BY affected_sessions DESC, error_occurrences DESC, latest_error DESC
+         LIMIT 25"
     );
-    $networkStatement->execute($params);
+    $detailStatement->execute($params);
+
+    $summary = $summaryStatement->fetch() ?: [];
 
     return [
-        'browsers' => $browserStatement->fetchAll(),
-        'devices' => $deviceStatement->fetchAll(),
-        'networks' => $networkStatement->fetchAll()
+        'summary' => [
+            'error_occurrences' => (int) ($summary['error_occurrences'] ?? 0),
+            'affected_sessions' => (int) ($summary['affected_sessions'] ?? 0),
+            'affected_pages' => (int) ($summary['affected_pages'] ?? 0)
+        ],
+        'pages' => $pageStatement->fetchAll(),
+        'details' => $detailStatement->fetchAll()
     ];
 }
 
@@ -181,48 +214,139 @@ function getShoppingProgress(array $range): array
     ];
 }
 
-function getBehaviorReportData(array $range): array
+function getPageEngagementReportData(array $range): array
 {
-    $errorStatement = database()->prepare(
-        "SELECT
-            page_url,
-            COUNT(*) AS error_count,
-            MAX(event_time) AS latest_error,
-            MAX(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(event_data, '$.message')), '')) AS example_message
-         FROM activity_events
-         WHERE event_time >= :start
-           AND event_time < :end
-           AND event_type = 'error'
-         GROUP BY page_url
-         ORDER BY error_count DESC, page_url ASC
-         LIMIT 10"
+    $statement = database()->prepare(
+        "WITH page_sessions AS (
+            SELECT
+                page_url,
+                COUNT(*) AS page_loads,
+                COUNT(DISTINCT session_id) AS page_sessions
+            FROM static_data
+            WHERE collected_at >= :start
+              AND collected_at < :end
+            GROUP BY page_url
+         ), interactions AS (
+            SELECT
+                page_url,
+                COUNT(DISTINCT CASE
+                    WHEN event_type IN ('click', 'scroll', 'keydown')
+                    THEN session_id END
+                ) AS engaged_sessions,
+                SUM(event_type = 'click') AS clicks,
+                SUM(event_type = 'scroll') AS scrolls,
+                SUM(event_type = 'keydown') AS keydowns
+            FROM activity_events
+            WHERE event_time >= :event_start
+              AND event_time < :event_end
+              AND event_type IN ('click', 'scroll', 'keydown')
+            GROUP BY page_url
+         )
+         SELECT
+            p.page_url,
+            p.page_loads,
+            p.page_sessions,
+            LEAST(COALESCE(i.engaged_sessions, 0), p.page_sessions) AS engaged_sessions,
+            ROUND(
+                LEAST(COALESCE(i.engaged_sessions, 0), p.page_sessions)
+                / NULLIF(p.page_sessions, 0) * 100,
+                1
+            ) AS engagement_rate,
+            COALESCE(i.clicks, 0) AS clicks,
+            COALESCE(i.scrolls, 0) AS scrolls,
+            COALESCE(i.keydowns, 0) AS keydowns
+         FROM page_sessions p
+         LEFT JOIN interactions i ON i.page_url = p.page_url
+         ORDER BY engagement_rate DESC, p.page_sessions DESC, p.page_url ASC"
     );
-    $errorStatement->execute(['start' => $range['sql_start'], 'end' => $range['sql_end']]);
+    $statement->execute([
+        'start' => $range['sql_start'],
+        'end' => $range['sql_end'],
+        'event_start' => $range['sql_start'],
+        'event_end' => $range['sql_end']
+    ]);
+
+    $pages = $statement->fetchAll();
+    $pageSessions = 0;
+    $engagedSessions = 0;
+
+    foreach ($pages as $page) {
+        $pageSessions += (int) $page['page_sessions'];
+        $engagedSessions += (int) $page['engaged_sessions'];
+    }
 
     return [
-        'progress' => getShoppingProgress($range),
-        'errors' => $errorStatement->fetchAll()
+        'summary' => [
+            'page_sessions' => $pageSessions,
+            'engaged_page_sessions' => $engagedSessions,
+            'engagement_rate' => $pageSessions > 0
+                ? round($engagedSessions / $pageSessions * 100, 1)
+                : 0.0
+        ],
+        'pages' => $pages
+    ];
+}
+
+function performanceBudgetMilliseconds(): int
+{
+    return 3000;
+}
+
+function getPerformanceBudgetData(array $range): array
+{
+    $statement = database()->prepare(
+        'WITH ranked_loads AS (
+            SELECT
+                page_url,
+                total_load_time_ms,
+                ROW_NUMBER() OVER (
+                    PARTITION BY page_url
+                    ORDER BY total_load_time_ms
+                ) AS load_rank,
+                COUNT(*) OVER (PARTITION BY page_url) AS measurement_count
+            FROM performance_data
+            WHERE collected_at >= :start
+              AND collected_at < :end
+              AND total_load_time_ms IS NOT NULL
+              AND total_load_time_ms >= 0
+         )
+         SELECT
+            page_url,
+            MAX(measurement_count) AS measurements,
+            ROUND(AVG(total_load_time_ms), 2) AS average_ms,
+            ROUND(MAX(CASE
+                WHEN load_rank = CEIL(measurement_count * 0.75)
+                THEN total_load_time_ms END
+            ), 2) AS p75_ms,
+            ROUND(MAX(total_load_time_ms), 2) AS slowest_ms
+         FROM ranked_loads
+         GROUP BY page_url
+         ORDER BY p75_ms DESC, page_url ASC'
+    );
+    $statement->execute(['start' => $range['sql_start'], 'end' => $range['sql_end']]);
+
+    $pages = $statement->fetchAll();
+    $budget = performanceBudgetMilliseconds();
+    $withinBudget = 0;
+
+    foreach ($pages as &$page) {
+        $page['within_budget'] = (float) $page['p75_ms'] <= $budget;
+
+        if ($page['within_budget']) {
+            $withinBudget++;
+        }
+    }
+    unset($page);
+
+    return [
+        'budget_ms' => $budget,
+        'pages_within_budget' => $withinBudget,
+        'pages_over_budget' => count($pages) - $withinBudget,
+        'pages' => $pages
     ];
 }
 
 function getPerformanceExportData(array $range): array
 {
-    $statement = database()->prepare(
-        'SELECT
-            page_url,
-            COUNT(*) AS measurements,
-            ROUND(AVG(total_load_time_ms), 2) AS average_ms,
-            ROUND(MAX(total_load_time_ms), 2) AS slowest_ms
-         FROM performance_data
-         WHERE collected_at >= :start
-           AND collected_at < :end
-           AND total_load_time_ms IS NOT NULL
-           AND total_load_time_ms >= 0
-         GROUP BY page_url
-         ORDER BY average_ms DESC, page_url ASC
-         LIMIT 10'
-    );
-    $statement->execute(['start' => $range['sql_start'], 'end' => $range['sql_end']]);
-
-    return $statement->fetchAll();
+    return getPerformanceBudgetData($range)['pages'];
 }

@@ -14,7 +14,7 @@ Aaron Delgado
 
 ## Project overview
 
-This project closes the loop between the analytics collector from HW3 and people who can act on the data. The test store sends page, performance, activity, and error information to the collector. The reporting application reads that data from MySQL and turns it into an overview plus three detailed report categories: Technology, Performance, and Behavior.
+This project closes the loop between the analytics collector from HW3 and people who can act on the data. The test store sends page, performance, activity, and error information to the collector. The reporting application reads that data from MySQL and turns it into an overview plus three detailed report categories: Technical Errors, Performance Budget, and Page Engagement.
 
 The backend uses PHP and MySQL. The interface uses plain JavaScript and CSS so the reporting pages stay small and do not download a large front-end framework before loading the data. GitHub Actions deploys the main site, test store, collector, and reporting application to my DigitalOcean server when I push to `main`.
 
@@ -25,7 +25,7 @@ Users sign in with either a username or email and a password. Passwords are stor
 The application has the required three roles:
 
 - **Super admin:** can see every analytics category, publish reports, export PDFs, and create, edit, disable, or delete users.
-- **Analyst:** can use the dashboard and create, edit, publish, and export reports in the sections assigned to that account. For example, one analyst can be limited to Performance while another can have Performance and Behavior.
+- **Analyst:** can use the dashboard and create, edit, publish, and export reports in the sections assigned to that account. For example, one analyst can be limited to the Performance Budget while another can also have Page Engagement.
 - **Viewer:** cannot open the live dashboard, raw reporting APIs, user management, or draft reports. A viewer is sent to the report library and can only open published reports and download their PDFs.
 
 Authorization is checked on the server for pages, APIs, report updates, and exports. Hiding a link is not treated as access control. Disabled or deleted accounts also lose access on their next request because the database account is checked again.
@@ -42,23 +42,23 @@ The dashboard stays high-level and sends users to the report library for deeper 
 
 ## Reports
 
-### Technology
+### Technical Errors
 
-Guiding question: **Which browsers, screen sizes, and network conditions should we support first?**
+Guiding question: **Which JavaScript errors affect the most sessions and should be fixed first?**
 
-The browser bar chart shows which browser families appear most often. The screen-size table separates sessions from page loads so repeat visits are not mistaken for different people. Network type is included as a supporting signal because browser connection information can be missing or approximate.
+This report keeps technical problems separate from user behavior. Its chart ranks pages by the number of distinct sessions that recorded a JavaScript error. The table groups the page, message, file, and line so I can see both how many times a problem happened and how many sessions it affected. This matters because one broken loop can record the same error many times for one visitor. I would start with an error that affects more sessions, then use its message and source location to reproduce it.
 
-### Performance
+### Performance Budget
 
-Guiding question: **Which pages are loading slowly, and where should performance work be focused?**
+Guiding question: **Which pages exceed the 3-second load-time budget, and where should performance work be focused?**
 
-The report can switch between individual load-time dots and average loading-stage bars. The dots expose occasional slow outliers that an average can hide. The stage chart separates time before the request, waiting for a response, downloading HTML, and the time after the response until the load event finishes. The grid provides exact stage values. Invalid or incomplete timing records are excluded rather than treated as zero.
+The main comparison uses the 75th-percentile load time for each page and checks it against a 3,000 ms budget. I used p75 because a plain average can hide slow experiences, while a single worst load can overstate a one-time problem. The report still includes the individual load-time dots and average loading-stage bars for investigating a budget miss. The stage chart separates time before the request, waiting for a response, downloading HTML, and the time after the response until the load event finishes. Invalid or incomplete timing records are excluded rather than treated as zero.
 
-### Behavior
+### Page Engagement
 
-Guiding question: **How far are sessions moving through the shopping flow, and where should we investigate?**
+Guiding question: **Which pages have the strongest meaningful interaction rate, and which pages need a closer look?**
 
-The funnel counts a product view, later checkout visit, and later demo-success event only when they occur in that order in the same session. The table provides exact counts and conversion percentages. A second table lists pages recording JavaScript errors, which gives the analyst a technical lead without claiming that every error caused someone to leave. The demo success message is randomized and is not a verified purchase or revenue event.
+A page session counts as engaged when it contains at least one click, scroll, or key press. Mouse movement is not included because it creates a lot of records without showing a clear action. The chart compares engaged-session rates instead of raw activity totals, and the table keeps the page-session sample size beside the click, scroll, and key-press counts. A page with no scrolling is not automatically treated as bad; a short page may not need scrolling, and clicks or keyboard use can still make the session engaged. The shopping funnel remains on the dashboard as a high-level overview.
 
 ## Saving, publishing, and exporting
 
@@ -68,7 +68,7 @@ Every accessible report has a server-generated PDF export. The export repeats th
 
 ## Error handling and performance
 
-The reporting application includes custom 403, 404, and 500 pages, protects internal include files, rejects invalid methods and date ranges, and shows a notice when JavaScript is disabled on the interactive dashboard or performance report. The Technology and Behavior reports are rendered by PHP and remain readable without JavaScript.
+The reporting application includes custom 403, 404, and 500 pages, protects internal include files, rejects invalid methods and date ranges, and shows a notice when JavaScript is disabled on the interactive dashboard or performance report. The Technical Errors and Page Engagement reports are rendered by PHP and remain readable without JavaScript.
 
 The application deliberately avoids a front-end framework and browser charting package. Most visualizations use regular HTML and CSS, and the API limits detailed performance samples to the latest 100 records. Dompdf is used only on the server when somebody requests an export, so it does not increase the JavaScript or page weight downloaded by dashboard users. This keeps the interactive pages small while preserving readable labels and exact table values.
 

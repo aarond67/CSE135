@@ -284,7 +284,7 @@ function displayRole(string $role): string
                                     true
                                 ) ? 'checked' : '' ?>
                             >
-                            <?= escape(ucfirst($section)) ?>
+                            <?= escape(displayAnalyticsSection($section)) ?>
                         </label>
                     <?php endforeach; ?>
                 </fieldset>
@@ -363,9 +363,10 @@ function displayRole(string $role): string
                                         <?= escape(
                                             implode(
                                                 ', ',
-                                                $managedUser[
-                                                    'permitted_sections'
-                                                ]
+                                                array_map(
+                                                    'displayAnalyticsSection',
+                                                    $managedUser['permitted_sections']
+                                                )
                                             )
                                         ) ?>
                                     <?php endif; ?>
@@ -518,7 +519,7 @@ function displayRole(string $role): string
                                                             ) ? 'checked' : '' ?>
                                                         >
                                                         <?= escape(
-                                                            ucfirst($section)
+                                                            displayAnalyticsSection($section)
                                                         ) ?>
                                                     </label>
                                                 <?php endforeach; ?>

@@ -13,11 +13,22 @@ function allowedUserRoles(): array
 
 function allowedAnalyticsSections(): array
 {
+    // These are existing database keys. The labels below describe the reports
+    // now shown for each permission, so current analyst assignments still work.
     return [
         'technology',
         'performance',
         'behavior'
     ];
+}
+
+function displayAnalyticsSection(string $section): string
+{
+    return [
+        'technology' => 'Technical errors',
+        'performance' => 'Performance budget',
+        'behavior' => 'Page engagement'
+    ][$section] ?? ucfirst($section);
 }
 
 function listUsers(): array

@@ -15,7 +15,7 @@ $roleName = displayUserRole($user['role']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports | Bad Decisions Analytics</title>
-    <link rel="stylesheet" href="/assets/css/app.css?v=hw5-1">
+    <link rel="stylesheet" href="/assets/css/app.css?v=report-focus-1">
 </head>
 <body>
     <header class="topbar">
@@ -78,7 +78,7 @@ $roleName = displayUserRole($user['role']);
             <section class="report-card-grid" aria-label="Available reports">
                 <?php foreach ($reports as $report): ?>
                     <article class="panel report-card report-card-<?= escape($report['category']) ?>">
-                        <p class="eyebrow"><?= escape(ucfirst($report['category'])) ?></p>
+                        <p class="eyebrow"><?= escape($report['category_label']) ?></p>
                         <h2><?= escape($report['title']) ?></h2>
                         <p><?= escape($report['guiding_question']) ?></p>
 

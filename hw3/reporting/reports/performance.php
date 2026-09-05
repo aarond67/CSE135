@@ -44,13 +44,13 @@ $exportQuery = http_build_query([
     >
 
     <title>
-        Performance Report | Bad Decisions Analytics
+        Performance Budget | Bad Decisions Analytics
     </title>
 
-    <link rel="stylesheet" href="/assets/css/app.css?v=performance-switch-1">
+    <link rel="stylesheet" href="/assets/css/app.css?v=report-focus-1">
 
     <script
-        src="/assets/js/performance-report.js?v=performance-summary-2"
+        src="/assets/js/performance-report.js?v=performance-budget-1"
         defer
     ></script>
 </head>
@@ -58,7 +58,7 @@ $exportQuery = http_build_query([
     <header class="topbar">
         <div>
             <p class="eyebrow">Bad Decisions Analytics</p>
-            <strong>Performance Report</strong>
+            <strong>Performance Budget</strong>
         </div>
 
         <div class="user-controls">
@@ -106,12 +106,12 @@ $exportQuery = http_build_query([
 
         <section class="dashboard-heading">
             <div>
-                <p class="eyebrow">Detailed report</p>
-                <h1>Website performance</h1>
+                <p class="eyebrow">Performance budget</p>
+                <h1>Page-load budget</h1>
 
                 <p class="muted">
-                    Compare page-loading measurements and find pages
-                    that may need performance improvements.
+                    Compare each page's 75th-percentile load time with
+                    a 3-second budget, then inspect slow measurements.
                 </p>
             </div>
 
@@ -199,22 +199,50 @@ $exportQuery = http_build_query([
             </article>
 
             <article class="metric-card">
-                <span class="metric-label">Fastest load</span>
-                <strong id="performance-fastest">—</strong>
-                <small>Fastest measurement</small>
+                <span class="metric-label">Pages within budget</span>
+                <strong id="performance-within-budget">—</strong>
+                <small>Page p75 at or below 3 seconds</small>
             </article>
 
             <article class="metric-card">
-                <span class="metric-label">Slowest load</span>
-                <strong id="performance-slowest">—</strong>
-                <small>Slowest measurement</small>
+                <span class="metric-label">Pages over budget</span>
+                <strong id="performance-over-budget">—</strong>
+                <small>Page p75 above 3 seconds</small>
             </article>
+        </section>
+
+        <section class="panel report-panel">
+            <p class="eyebrow">Budget check</p>
+            <h2 id="performance-budget-title">75th-percentile load time by page</h2>
+            <p class="muted" id="performance-budget-description">
+                The p75 value is the load time that 75% of measurements meet or beat.
+                It is compared with the same 3,000 ms budget for every page.
+            </p>
+            <div
+                id="performance-budget-chart"
+                class="performance-budget-chart"
+                aria-labelledby="performance-budget-title"
+                aria-describedby="performance-budget-description"
+                aria-busy="true"
+            ></div>
+        </section>
+
+        <section class="panel data-panel">
+            <p class="eyebrow">Exact budget results</p>
+            <h2 id="performance-budget-table-title">Pages compared with the budget</h2>
+            <div
+                id="performance-budget-table"
+                aria-labelledby="performance-budget-table-title"
+                aria-busy="true"
+            >
+                <p class="empty-state">Loading budget results...</p>
+            </div>
         </section>
 
         <section class="panel report-panel">
             <div class="performance-chart-heading">
                 <div>
-                    <p class="eyebrow">Investigate page loading</p>
+                    <p class="eyebrow">Investigate budget misses</p>
                     <h2 id="performance-chart-title">Individual load times</h2>
                 </div>
 
@@ -274,7 +302,7 @@ $exportQuery = http_build_query([
 
         <section class="panel analyst-panel">
             <p class="eyebrow">Analyst comments</p>
-            <h2>What does this data mean?</h2>
+            <h2>What should be improved first?</h2>
 
             <p>
                 <strong>Guiding question:</strong>
@@ -291,7 +319,7 @@ $exportQuery = http_build_query([
                         name="analyst_comments"
                         rows="8"
                         maxlength="5000"
-                        placeholder="Explain what the performance data shows and which pages should be improved first."
+                        placeholder="Explain which pages miss the budget, whether the sample is large enough, and which loading stage you would investigate next."
                     ><?= escape($analystComments) ?></textarea>
 
                     <label class="checkbox-label publish-control">

@@ -7,27 +7,30 @@ function reportDefinitions(): array
     return [
         'technology-overview' => [
             'report_key' => 'technology-overview',
-            'title' => 'Visitor Technology',
+            'title' => 'Technical Errors',
             'category' => 'technology',
+            'category_label' => 'Technical errors',
             'guiding_question' =>
-                'Which browsers, screen sizes, and network conditions should we support first?',
-            'path' => '/reports/technology.php'
+                'Which JavaScript errors affect the most sessions and should be fixed first?',
+            'path' => '/reports/errors.php'
         ],
         'performance-overview' => [
             'report_key' => 'performance-overview',
-            'title' => 'Website Performance',
+            'title' => 'Performance Budget',
             'category' => 'performance',
+            'category_label' => 'Performance budget',
             'guiding_question' =>
-                'Which pages are loading slowly, and where should performance work be focused?',
+                'Which pages exceed the 3-second load-time budget, and where should performance work be focused?',
             'path' => '/reports/performance.php'
         ],
         'behavior-overview' => [
             'report_key' => 'behavior-overview',
-            'title' => 'Shopping Behavior',
+            'title' => 'Page Engagement',
             'category' => 'behavior',
+            'category_label' => 'Page engagement',
             'guiding_question' =>
-                'How far are sessions moving through the shopping flow, and where should we investigate?',
-            'path' => '/reports/behavior.php'
+                'Which pages have the strongest meaningful interaction rate, and which pages need a closer look?',
+            'path' => '/reports/engagement.php'
         ]
     ];
 }

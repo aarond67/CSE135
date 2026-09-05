@@ -11,27 +11,27 @@ INSERT INTO saved_reports (
 ) VALUES
 (
     'technology-overview',
-    'Visitor Technology',
+    'Technical Errors',
     'technology',
-    'Which browsers, screen sizes, and network conditions should we support first?',
+    'Which JavaScript errors affect the most sessions and should be fixed first?',
     NULL,
     NULL,
     FALSE
 ),
 (
     'performance-overview',
-    'Website Performance',
+    'Performance Budget',
     'performance',
-    'Which pages are loading slowly, and where should performance work be focused?',
+    'Which pages exceed the 3-second load-time budget, and where should performance work be focused?',
     NULL,
     NULL,
     FALSE
 ),
 (
     'behavior-overview',
-    'Shopping Behavior',
+    'Page Engagement',
     'behavior',
-    'How far are sessions moving through the shopping flow, and where should we investigate?',
+    'Which pages have the strongest meaningful interaction rate, and which pages need a closer look?',
     NULL,
     NULL,
     FALSE

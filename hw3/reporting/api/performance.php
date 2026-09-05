@@ -87,7 +87,9 @@ try {
                 AS slowest_load_time_ms
          FROM performance_data
          WHERE collected_at >= :start
-           AND collected_at < :end'
+           AND collected_at < :end
+           AND total_load_time_ms IS NOT NULL
+           AND total_load_time_ms >= 0'
     );
 
     $summaryStatement->execute($dateParams);
@@ -95,26 +97,10 @@ try {
     $summaryRow =
         $summaryStatement->fetch() ?: [];
 
-    // Keep the per-page summary available to API callers.
-    $pageStatement = $pdo->prepare(
-        'SELECT
-            page_url,
-            COUNT(*) AS measurements,
-            ROUND(AVG(total_load_time_ms), 2)
-                AS average_load_time_ms,
-            ROUND(MIN(total_load_time_ms), 2)
-                AS fastest_load_time_ms,
-            ROUND(MAX(total_load_time_ms), 2)
-                AS slowest_load_time_ms
-         FROM performance_data
-         WHERE collected_at >= :start
-           AND collected_at < :end
-         GROUP BY page_url
-         ORDER BY average_load_time_ms DESC,
-                  page_url ASC'
-    );
-
-    $pageStatement->execute($dateParams);
+    $budgetData = getPerformanceBudgetData([
+        'sql_start' => $dateRange['sql_start'],
+        'sql_end' => $dateRange['sql_end_exclusive']
+    ]);
 
     $pageRows = array_map(
         static function (array $row): array {
@@ -123,14 +109,15 @@ try {
                 'measurements' =>
                     (int) $row['measurements'],
                 'averageLoadTimeMs' =>
-                    (float) $row['average_load_time_ms'],
-                'fastestLoadTimeMs' =>
-                    (float) $row['fastest_load_time_ms'],
+                    (float) $row['average_ms'],
+                'p75LoadTimeMs' =>
+                    (float) $row['p75_ms'],
                 'slowestLoadTimeMs' =>
-                    (float) $row['slowest_load_time_ms']
+                    (float) $row['slowest_ms'],
+                'withinBudget' => (bool) $row['within_budget']
             ];
         },
-        $pageStatement->fetchAll()
+        $budgetData['pages']
     );
 
     // The two chart views and stage grid share the latest 100 records.
@@ -147,6 +134,8 @@ try {
          FROM performance_data
          WHERE collected_at >= :start
            AND collected_at < :end
+           AND total_load_time_ms IS NOT NULL
+           AND total_load_time_ms >= 0
          ORDER BY collected_at DESC, id DESC
          LIMIT 100'
     );
@@ -200,7 +189,11 @@ try {
                 (float) (
                     $summaryRow['slowest_load_time_ms'] ??
                     0
-                )
+                ),
+
+            'budgetMs' => $budgetData['budget_ms'],
+            'pagesWithinBudget' => $budgetData['pages_within_budget'],
+            'pagesOverBudget' => $budgetData['pages_over_budget']
         ],
 
         'byPage' => $pageRows,

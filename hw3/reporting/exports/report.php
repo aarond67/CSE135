@@ -57,99 +57,91 @@ function reportPageLabel(string $url): string
 $chartTitle = '';
 $chartNote = '';
 $chartRows = [];
+$chartMinimumMaximum = 1;
 $tableTitle = '';
 $tableHeaders = [];
 $tableRows = [];
 
 if ($report['category'] === 'technology') {
-    $data = getTechnologyReportData($range);
+    $data = getTechnicalErrorReportData($range);
 
-    $chartTitle = 'Page loads by browser';
-    $chartNote = 'Recorded page loads, including repeat visits.';
-    $chartRows = array_map(
-        static fn (array $row): array => [
-            'label' => (string) $row['browser'],
-            'value' => (float) $row['page_loads'],
-            'display' => number_format((int) $row['page_loads'])
-        ],
-        $data['browsers']
-    );
-
-    $tableTitle = 'Screen-size summary';
-    $tableHeaders = ['Screen group', 'Sessions', 'Page loads', 'Average width'];
-    $tableRows = array_map(
-        static fn (array $row): array => [
-            (string) $row['screen_group'],
-            number_format((int) $row['sessions']),
-            number_format((int) $row['page_loads']),
-            $row['average_screen_width'] !== null
-                ? number_format((float) $row['average_screen_width'], 0) . ' px'
-                : 'Not available'
-        ],
-        $data['devices']
-    );
-} elseif ($report['category'] === 'behavior') {
-    $data = getBehaviorReportData($range);
-    $progress = $data['progress'];
-
-    $chartTitle = 'Sessions reaching each shopping step';
-    $chartNote = 'Each session counts once per step, and the steps must occur in order.';
-    $chartRows = [
-        [
-            'label' => 'Visited site',
-            'value' => $progress['visited'],
-            'display' => number_format($progress['visited'])
-        ],
-        [
-            'label' => 'Viewed product',
-            'value' => $progress['product'],
-            'display' => number_format($progress['product'])
-        ],
-        [
-            'label' => 'Reached checkout',
-            'value' => $progress['checkout'],
-            'display' => number_format($progress['checkout'])
-        ],
-        [
-            'label' => 'Demo success shown',
-            'value' => $progress['success'],
-            'display' => number_format($progress['success'])
-        ]
-    ];
-
-    $tableTitle = 'Pages recording JavaScript errors';
-    $tableHeaders = ['Page', 'Errors', 'Latest occurrence', 'Example message'];
-    $tableRows = array_map(
-        static fn (array $row): array => [
-            reportPageLabel((string) $row['page_url']),
-            number_format((int) $row['error_count']),
-            (string) $row['latest_error'] . ' UTC',
-            (string) ($row['example_message'] ?? 'No message recorded')
-        ],
-        $data['errors']
-    );
-} else {
-    $rows = getPerformanceExportData($range);
-
-    $chartTitle = 'Average load time by page';
-    $chartNote = 'Longer bars identify pages that deserve a closer performance review.';
+    $chartTitle = 'Sessions affected by JavaScript errors';
+    $chartNote = 'Bars count distinct affected sessions. Repeated errors in one session do not make its bar larger.';
     $chartRows = array_map(
         static fn (array $row): array => [
             'label' => reportPageLabel((string) $row['page_url']),
-            'value' => (float) $row['average_ms'],
-            'display' => number_format((float) $row['average_ms'], 1) . ' ms'
+            'value' => (float) $row['affected_sessions'],
+            'display' => number_format((int) $row['affected_sessions']) . ' sessions'
+        ],
+        $data['pages']
+    );
+
+    $tableTitle = 'JavaScript errors to investigate';
+    $tableHeaders = ['Page', 'Error message', 'Occurrences', 'Sessions', 'Latest'];
+    $tableRows = array_map(
+        static fn (array $row): array => [
+            reportPageLabel((string) $row['page_url']),
+            (string) $row['error_message'],
+            number_format((int) $row['error_occurrences']),
+            number_format((int) $row['affected_sessions']),
+            (string) $row['latest_error'] . ' UTC'
+        ],
+        $data['details']
+    );
+} elseif ($report['category'] === 'behavior') {
+    $data = getPageEngagementReportData($range);
+    $chartMinimumMaximum = 100;
+
+    $chartTitle = 'Engaged-session rate by page';
+    $chartNote = 'A page session counts as engaged when it includes a click, scroll, or key press.';
+    $chartRows = array_map(
+        static fn (array $row): array => [
+            'label' => reportPageLabel((string) $row['page_url']),
+            'value' => (float) $row['engagement_rate'],
+            'display' => number_format((float) $row['engagement_rate'], 1) . '%'
+        ],
+        array_slice($data['pages'], 0, 10)
+    );
+
+    $tableTitle = 'Page engagement details';
+    $tableHeaders = ['Page', 'Page sessions', 'Engaged', 'Rate', 'Clicks', 'Scrolls'];
+    $tableRows = array_map(
+        static fn (array $row): array => [
+            reportPageLabel((string) $row['page_url']),
+            number_format((int) $row['page_sessions']),
+            number_format((int) $row['engaged_sessions']),
+            number_format((float) $row['engagement_rate'], 1) . '%',
+            number_format((int) $row['clicks']),
+            number_format((int) $row['scrolls'])
+        ],
+        $data['pages']
+    );
+} else {
+    $budgetData = getPerformanceBudgetData($range);
+    $rows = $budgetData['pages'];
+    $chartMinimumMaximum = (float) $budgetData['budget_ms'];
+
+    $chartTitle = '75th-percentile load time by page';
+    $chartNote = 'Each page is compared with a 3,000 ms load-time budget.';
+    $chartRows = array_map(
+        static fn (array $row): array => [
+            'label' => reportPageLabel((string) $row['page_url']),
+            'value' => (float) $row['p75_ms'],
+            'display' => number_format((float) $row['p75_ms'], 1) . ' ms'
         ],
         $rows
     );
 
-    $tableTitle = 'Page performance';
-    $tableHeaders = ['Page', 'Measurements', 'Average', 'Slowest'];
+    $tableTitle = 'Performance budget results';
+    $tableHeaders = ['Page', 'Measurements', 'p75', 'Average', 'Slowest', 'Result'];
     $tableRows = array_map(
         static fn (array $row): array => [
             reportPageLabel((string) $row['page_url']),
             number_format((int) $row['measurements']),
+            number_format((float) $row['p75_ms'], 1) . ' ms',
             number_format((float) $row['average_ms'], 1) . ' ms',
-            number_format((float) $row['slowest_ms'], 1) . ' ms'
+            number_format((float) $row['slowest_ms'], 1) . ' ms',
+            $row['within_budget'] ? 'Within budget' : 'Over budget'
         ],
         $rows
     );
@@ -160,7 +152,7 @@ $chartMaximum = max(max(
         static fn (array $row): float => (float) $row['value'],
         $chartRows ?: [['value' => 0]]
     )),
-    1
+    $chartMinimumMaximum
 );
 
 $comments = trim((string) ($savedReport['analyst_comments'] ?? ''));
