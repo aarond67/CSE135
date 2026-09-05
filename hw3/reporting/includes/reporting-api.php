@@ -79,6 +79,32 @@ function requireApiSection(string $section): array
     return $user;
 }
 
+function requireApiReport(string $reportKey): array
+{
+    $definition = findReportDefinition($reportKey);
+    $user = currentUser();
+
+    if ($user === null) {
+        apiResponse(['error' => 'Authentication is required'], 401);
+    }
+
+    if ($definition === null) {
+        apiResponse(['error' => 'The requested report does not exist'], 404);
+    }
+
+    if ($user['role'] === 'viewer') {
+        $saved = findSavedReport($reportKey);
+
+        if ($saved === null || !$saved['is_published']) {
+            apiResponse(['error' => 'This report is not published'], 403);
+        }
+    } elseif (!canEditReport($user, $definition['category'])) {
+        apiResponse(['error' => 'You cannot access this report category'], 403);
+    }
+
+    return $user;
+}
+
 // Reject invalid dates instead of letting PHP roll them into another month.
 function parseApiDate(mixed $value): ?DateTimeImmutable
 {

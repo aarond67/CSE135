@@ -517,6 +517,134 @@ a.button {
     }
 }
 
+/* Final-project report library and published report views. */
+.report-library-heading {
+    margin-bottom: 1.25rem;
+}
+
+.report-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: 1rem;
+}
+
+.report-card {
+    display: flex;
+    min-height: 15rem;
+    flex-direction: column;
+    border-top: 0.3rem solid #2563eb;
+}
+
+.report-card-performance {
+    border-top-color: #7c3aed;
+}
+
+.report-card-behavior {
+    border-top-color: #0f766e;
+}
+
+.report-card h2 {
+    margin: 0.45rem 0;
+}
+
+.report-card > p:not(.eyebrow) {
+    color: #475569;
+    line-height: 1.55;
+}
+
+.report-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: auto;
+}
+
+.report-state {
+    padding: 0.3rem 0.55rem;
+    color: #475569;
+    background: #e2e8f0;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.report-state.is-published {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.report-grid-main {
+    margin-bottom: 1.25rem;
+}
+
+.stat-list {
+    display: grid;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.stat-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.publish-control {
+    align-self: start;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #dbe3ee;
+    border-radius: 0.45rem;
+}
+
+.published-comments {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8fafc;
+    border-left: 3px solid #2563eb;
+    line-height: 1.65;
+    white-space: normal;
+}
+
+.report-funnel {
+    max-width: 58rem;
+    margin-top: 1.25rem;
+}
+
+.url-cell {
+    max-width: 24rem;
+    overflow-wrap: anywhere;
+}
+
+.error-page {
+    display: grid;
+    min-height: 100vh;
+    place-items: center;
+    padding: 1rem;
+}
+
+.error-card {
+    width: min(100%, 38rem);
+    padding: 2rem;
+}
+
+@media (max-width: 42rem) {
+    .report-card-footer,
+    .stat-list li {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .report-funnel .funnel-step {
+        grid-template-columns: minmax(8rem, 1fr) minmax(7rem, 1.4fr) 2rem;
+    }
+}
+
 [hidden] {
     display: none !important;
 }

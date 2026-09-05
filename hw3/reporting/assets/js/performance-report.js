@@ -15,6 +15,7 @@
     const chartDescription = document.getElementById("performance-chart-description");
     const chartNote = document.getElementById("performance-chart-note");
     const chartDetail = document.getElementById("performance-chart-detail");
+    const exportLink = document.getElementById("performance-export");
 
     const stages = [
         { key: "beforeRequestMs", label: "Before request", className: "before" },
@@ -425,6 +426,15 @@
         stageButton.disabled = false;
         renderChart();
         renderStageTable(payload.records);
+
+        if (exportLink) {
+            const exportQuery = new URLSearchParams({
+                key: "performance-overview",
+                start: payload.dateRange.start,
+                end: payload.dateRange.end
+            });
+            exportLink.href = "/exports/report.php?" + exportQuery;
+        }
 
         statusMessage.className = "status-message status-success";
 

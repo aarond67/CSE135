@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/includes/bootstrap.php';
 require_once dirname(__DIR__) . '/includes/reporting-api.php';
 
 requireApiGetRequest();
-requireApiSection('performance');
+requireApiReport('performance-overview');
 
 $dateRange = getApiDateRange();
 

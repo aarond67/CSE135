@@ -131,8 +131,10 @@ function requireLogin(): array
 // Already signed in? Go straight to the dashboard.
 function requireGuest(): void
 {
-    if (currentUser() !== null) {
-        redirect('/dashboard.php');
+    $user = currentUser();
+
+    if ($user !== null) {
+        redirect(homePathForUser($user));
     }
 }
 

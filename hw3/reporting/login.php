@@ -29,7 +29,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'You are signed in.'
         );
 
-        redirect('/dashboard.php');
+        $user = currentUser();
+
+        redirect(
+            $user === null
+                ? '/login.php'
+                : homePathForUser($user)
+        );
     }
 
     $error = 'That username, email, or password did not match. Please try again.';
@@ -52,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <h1>Sign in</h1>
 
         <p class="muted">
-            Enter your username or email to access the reporting dashboard.
+            Enter your username or email to access analytics reports.
         </p>
 
         <?php foreach ($messages as $message): ?>

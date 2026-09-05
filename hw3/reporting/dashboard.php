@@ -10,7 +10,6 @@ $user = requireRole([
 ]);
 
 $messages = getFlashMessages();
-$canViewPerformance = userCanAccessSection($user, 'performance');
 
 $roleName = ucwords(
     str_replace('_', ' ', $user['role'])
@@ -61,6 +60,13 @@ $defaultStart = $today
                 </a>
             <?php endif; ?>
 
+            <a
+                href="/reports/index.php"
+                class="button button-secondary"
+            >
+                Reports
+            </a>
+
             <form method="post" action="/logout.php">
                 <?= csrfInput() ?>
 
@@ -97,14 +103,10 @@ $defaultStart = $today
                     Traffic, shopping progress, and page speed at a glance.
                 </p>
 
-                <?php if ($canViewPerformance): ?>
-                    <nav class="overview-report-nav" aria-label="Detailed reports">
-                        <span>Reports</span>
-                        <a href="/reports/performance.php" id="performance-report-link">
-                            Performance report &rarr;
-                        </a>
-                    </nav>
-                <?php endif; ?>
+                <nav class="overview-report-nav" aria-label="Detailed reports">
+                    <span>Detailed reports</span>
+                    <a href="/reports/index.php">Browse reports &rarr;</a>
+                </nav>
             </div>
 
             <form
@@ -239,13 +241,6 @@ $defaultStart = $today
                     aria-describedby="shopping-note shopping-limits"
                     aria-busy="true"
                 ></div>
-
-                <p class="muted overview-shopping-limits" id="shopping-limits">
-                    Product view, checkout, and demo success must occur in that order.
-                    Success is a randomized demo message, not a verified purchase.
-                    Older visits have no success tracking; missing records or steps
-                    outside the date range also leave stages uncounted.
-                </p>
             </section>
         </div>
 

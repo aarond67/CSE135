@@ -4,148 +4,19 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/includes/bootstrap.php';
 
-$user = requireSectionAccess('performance');
+[$user, $report, $savedReport] =
+    requireSavedReportAccess('performance-overview');
 
-$reportKey = 'performance-overview';
-
-$guidingQuestion =
-    'Which pages are loading slowly, and where should performance work be focused?';
-
-$requestMethod =
-    $_SERVER['REQUEST_METHOD'] ?? 'GET';
-
-if ($requestMethod === 'POST') {
-    requireValidCsrfToken();
-
-    $analystComments =
-        $_POST['analyst_comments'] ?? '';
-
-    if (!is_string($analystComments)) {
-        $analystComments = '';
-    }
-
-    $analystComments = trim($analystComments);
-
-    if (strlen($analystComments) > 5000) {
-        setFlashMessage(
-            'error',
-            'Analyst comments cannot exceed 5,000 characters.'
-        );
-
-        redirect('/reports/performance.php');
-    }
-
-    try {
-        $pdo = database();
-
-        $existingStatement = $pdo->prepare(
-            'SELECT id
-             FROM saved_reports
-             WHERE report_key = :report_key
-             LIMIT 1'
-        );
-
-        $existingStatement->execute([
-            'report_key' => $reportKey
-        ]);
-
-        $existingReportId =
-            $existingStatement->fetchColumn();
-
-        if ($existingReportId !== false) {
-            $updateStatement = $pdo->prepare(
-                'UPDATE saved_reports
-                 SET title = :title,
-                     category = :category,
-                     guiding_question = :guiding_question,
-                     analyst_comments = :analyst_comments,
-                     created_by = :created_by
-                 WHERE id = :id'
-            );
-
-            $updateStatement->execute([
-                'title' => 'Website Performance Overview',
-                'category' => 'performance',
-                'guiding_question' => $guidingQuestion,
-                'analyst_comments' => $analystComments,
-                'created_by' => $user['id'],
-                'id' => (int) $existingReportId
-            ]);
-        } else {
-            $insertStatement = $pdo->prepare(
-                'INSERT INTO saved_reports (
-                    report_key,
-                    title,
-                    category,
-                    guiding_question,
-                    analyst_comments,
-                    created_by,
-                    is_published
-                 ) VALUES (
-                    :report_key,
-                    :title,
-                    :category,
-                    :guiding_question,
-                    :analyst_comments,
-                    :created_by,
-                    FALSE
-                 )'
-            );
-
-            $insertStatement->execute([
-                'report_key' => $reportKey,
-                'title' => 'Website Performance Overview',
-                'category' => 'performance',
-                'guiding_question' => $guidingQuestion,
-                'analyst_comments' => $analystComments,
-                'created_by' => $user['id']
-            ]);
-        }
-
-        setFlashMessage(
-            'success',
-            'Your performance report comments were saved.'
-        );
-    } catch (Throwable $error) {
-        error_log(
-            '[CSE135 Performance Report] ' .
-            $error->getMessage()
-        );
-
-        setFlashMessage(
-            'error',
-            'The analyst comments could not be saved.'
-        );
-    }
-
-    redirect('/reports/performance.php');
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    saveReportFromPost($user, $report, '/reports/performance.php');
 }
 
-$reportStatement = database()->prepare(
-    'SELECT
-        analyst_comments,
-        is_published,
-        updated_at
-     FROM saved_reports
-     WHERE report_key = :report_key
-     LIMIT 1'
-);
-
-$reportStatement->execute([
-    'report_key' => $reportKey
-]);
-
-$savedReport =
-    $reportStatement->fetch() ?: [];
-
-$analystComments =
-    $savedReport['analyst_comments'] ?? '';
+$analystComments = $savedReport['analyst_comments'] ?? '';
+$canEdit = canEditReport($user, $report['category']);
 
 $messages = getFlashMessages();
 
-$roleName = ucwords(
-    str_replace('_', ' ', $user['role'])
-);
+$roleName = displayUserRole($user['role']);
 
 $timezone = new DateTimeZone('UTC');
 $today = new DateTimeImmutable('today', $timezone);
@@ -155,6 +26,12 @@ $defaultEnd =
 
 $defaultStart =
     $today->modify('-29 days')->format('Y-m-d');
+
+$exportQuery = http_build_query([
+    'key' => $report['report_key'],
+    'start' => $defaultStart,
+    'end' => $defaultEnd
+]);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -194,10 +71,10 @@ $defaultStart =
             </div>
 
             <a
-                href="/dashboard.php"
+                href="/reports/index.php"
                 class="button button-secondary"
             >
-                Back to dashboard
+                All reports
             </a>
 
             <form method="post" action="/logout.php">
@@ -401,44 +278,49 @@ $defaultStart =
 
             <p>
                 <strong>Guiding question:</strong>
-                <?= escape($guidingQuestion) ?>
+                <?= escape($report['guiding_question']) ?>
             </p>
 
-            <form
-                method="post"
-                action="/reports/performance.php"
-                class="comments-form"
-            >
-                <?= csrfInput() ?>
+            <?php if ($canEdit): ?>
+                <form method="post" action="/reports/performance.php" class="comments-form">
+                    <?= csrfInput() ?>
 
-                <label for="analyst-comments">
-                    Performance analysis
-                </label>
+                    <label for="analyst-comments">Performance analysis</label>
+                    <textarea
+                        id="analyst-comments"
+                        name="analyst_comments"
+                        rows="8"
+                        maxlength="5000"
+                        placeholder="Explain what the performance data shows and which pages should be improved first."
+                    ><?= escape($analystComments) ?></textarea>
 
-                <textarea
-                    id="analyst-comments"
-                    name="analyst_comments"
-                    rows="8"
-                    maxlength="5000"
-                    placeholder="Explain what the performance data shows and which pages should be improved first."
-                ><?= escape($analystComments) ?></textarea>
+                    <label class="checkbox-label publish-control">
+                        <input
+                            type="checkbox"
+                            name="is_published"
+                            value="1"
+                            <?= $savedReport['is_published'] ? 'checked' : '' ?>
+                        >
+                        Publish this report for viewer accounts
+                    </label>
 
-                <div class="comments-actions">
-                    <button
-                        type="submit"
-                        class="button button-primary"
-                    >
-                        Save comments
-                    </button>
-
-                    <span class="muted">
-                        This report is currently
-                        <?= !empty($savedReport['is_published'])
-                            ? 'published'
-                            : 'not published' ?>.
-                    </span>
+                    <div class="comments-actions">
+                        <button type="submit" class="button button-primary">Save report</button>
+                        <a id="performance-export" class="button button-secondary" href="/exports/report.php?<?= escape($exportQuery) ?>">
+                            Download PDF
+                        </a>
+                    </div>
+                </form>
+            <?php else: ?>
+                <div class="published-comments">
+                    <?= $analystComments !== ''
+                        ? nl2br(escape($analystComments))
+                        : '<p>No analyst comments were saved with this report.</p>' ?>
                 </div>
-            </form>
+                <a id="performance-export" class="button button-primary" href="/exports/report.php?<?= escape($exportQuery) ?>">
+                    Download PDF
+                </a>
+            <?php endif; ?>
         </section>
     </main>
 </body>
